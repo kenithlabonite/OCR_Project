@@ -1,0 +1,51 @@
+@page
+@model OCR_Frontend.Pages.LoginModel
+@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="auth-wrapper">
+    <div class="auth-container">
+        <div class="glass-panel p-5">
+            <div class="text-center mb-4">
+                <i class="bi bi-bezier2 fs-1" style="color: var(--primary-color);"></i>
+                <h2 class="mt-3">Welcome Back</h2>
+                <p>Sign in to continue to NexusOCR.</p>
+            </div>
+
+            <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+            <form method="post">
+                <div class="mb-3">
+                    <label class="form-label" asp-for="Email">Email Address</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                        <input asp-for="Email" type="email" class="form-control border-start-0 ps-0" placeholder="name@example.com" required />
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label mb-0" asp-for="Password">Password</label>
+                        <a href="/ForgotPassword" class="text-decoration-none small" style="color: var(--primary-color);">Forgot password?</a>
+                    </div>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                        <input asp-for="Password" type="password" class="form-control border-start-0 ps-0" placeholder="••••••••" required />
+                    </div>
+                </div>
+                
+                <div class="mb-4 form-check">
+                    <input type="checkbox" class="form-check-input" id="rememberMe">
+                    <label class="form-check-label" for="rememberMe">Remember me</label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary w-100 mb-4">Sign In</button>
+                
+                <div class="text-center text-muted">
+                    Don't have an account? <a href="/Register" class="text-decoration-none fw-medium" style="color: var(--primary-color);">Create one</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

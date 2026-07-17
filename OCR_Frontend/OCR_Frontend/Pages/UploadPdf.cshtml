@@ -1,0 +1,53 @@
+@page
+@model OCR_Frontend.Pages.UploadPdfModel
+@{
+    ViewData["Title"] = "Upload PDF";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="glass-panel p-5">
+                <div class="text-center mb-4">
+                    <i class="bi bi-file-earmark-pdf fs-1" style="color: var(--primary-color);"></i>
+                    <h2 class="mt-3">Upload PDF Document</h2>
+                    <p>Upload a PDF document to have it analyzed by NexusOCR.</p>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @Model.SuccessMessage
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @Model.ErrorMessage
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                <form method="post" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label class="form-label" asp-for="PdfFile">Select PDF File</label>
+                        <input asp-for="PdfFile" type="file" class="form-control" accept=".pdf" required />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label" asp-for="Description">Description (Optional)</label>
+                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter a brief description of the document..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-upload me-2"></i> Upload Document
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

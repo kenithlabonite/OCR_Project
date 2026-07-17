@@ -1,0 +1,81 @@
+@page
+@model OCR_Frontend.Pages.GenerateQuestionnaireModel
+@{
+    ViewData["Title"] = "Generate Questionnaire";
+}
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="glass-panel p-5">
+                <div class="text-center mb-4">
+                    <i class="bi bi-cpu fs-1" style="color: var(--primary-color);"></i>
+                    <h2 class="mt-3">Generate AI Questionnaire</h2>
+                    <p>Select an uploaded PDF topic to generate a 10-item multiple-choice exam.</p>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @Model.SuccessMessage
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+                
+                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @Model.ErrorMessage
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <form method="post" id="generateForm">
+                    <div class="mb-4">
+                        <label class="form-label" asp-for="SelectedDocumentId">Select Topic / PDF File</label>
+                        <select asp-for="SelectedDocumentId" class="form-select" required>
+                            <option value="">-- Select an uploaded PDF --</option>
+                            @foreach (var doc in Model.Documents)
+                            {
+                                <option value="@doc.Id">@doc.FileName @(string.IsNullOrEmpty(doc.Description) ? "" : $"({doc.Description})")</option>
+                            }
+                        </select>
+                        <small class="text-muted mt-1 d-block">
+                            Don't see your PDF? <a asp-page="/UploadPdf" class="text-decoration-none">Upload one now</a>.
+                        </small>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2" id="btnSubmit">
+                        <i class="bi bi-magic"></i> 
+                        <span id="btnText">Generate Questionnaire</span>
+                    </button>
+                </form>
+
+                <div id="loadingIndicator" class="text-center mt-4 d-none">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Analyzing PDF and generating questions with Gemini... This may take up to 30 seconds.</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('generateForm').addEventListener('submit', function (e) {
+            var btn = document.getElementById('btnSubmit');
+            var btnText = document.getElementById('btnText');
+            var loader = document.getElementById('loadingIndicator');
+
+            // Disable button to prevent double submission
+            btn.disabled = true;
+            btnText.innerText = "Generating...";
+            
+            // Show loading animation
+            loader.classList.remove('d-none');
+        });
+    </script>
+}

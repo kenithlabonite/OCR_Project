@@ -1,0 +1,12 @@
+# Build output directories
+**/bin/
+**/obj/
+
+# User-specific files
+*.user
+*.suo
+.vs/
+
+# OS files
+.DS_Store
+Thumbs.db
