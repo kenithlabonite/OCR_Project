@@ -14,7 +14,7 @@ namespace OCR_Frontend.Pages
         }
 
         [BindProperty]
-        public IFormFile? PdfFile { get; set; }
+        public List<IFormFile> PdfFiles { get; set; } = new();
 
         [BindProperty]
         public string? Description { get; set; }
@@ -28,26 +28,32 @@ namespace OCR_Frontend.Pages
 
         public async Task<IActionResult> OnPostAsync()
         {
-            if (PdfFile == null || PdfFile.Length == 0)
+            if (PdfFiles == null || PdfFiles.Count == 0)
             {
-                ErrorMessage = "Please select a valid PDF file.";
+                ErrorMessage = "Please select at least one PDF file.";
                 return Page();
             }
 
-            if (PdfFile.ContentType != "application/pdf")
+            foreach (var file in PdfFiles)
             {
-                ErrorMessage = "Only PDF files are accepted.";
-                return Page();
+                if (file.ContentType != "application/pdf")
+                {
+                    ErrorMessage = $"Only PDF files are accepted. Invalid file: '{file.FileName}'";
+                    return Page();
+                }
             }
 
             var client = _httpClientFactory.CreateClient("BackendClient");
 
             using var content = new MultipartFormDataContent();
             
-            // Add file
-            var fileStreamContent = new StreamContent(PdfFile.OpenReadStream());
-            fileStreamContent.Headers.ContentType = new MediaTypeHeaderValue(PdfFile.ContentType);
-            content.Add(fileStreamContent, "file", PdfFile.FileName);
+            // Add files
+            foreach (var file in PdfFiles)
+            {
+                var fileStreamContent = new StreamContent(file.OpenReadStream());
+                fileStreamContent.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType);
+                content.Add(fileStreamContent, "files", file.FileName);
+            }
 
             // Add metadata
             if (!string.IsNullOrEmpty(Description))
@@ -66,12 +72,12 @@ namespace OCR_Frontend.Pages
 
             if (response.IsSuccessStatusCode)
             {
-                SuccessMessage = "PDF uploaded successfully and is being analyzed!";
+                SuccessMessage = "PDF(s) uploaded successfully and are being analyzed!";
             }
             else
             {
                 var errorText = await response.Content.ReadAsStringAsync();
-                ErrorMessage = string.IsNullOrWhiteSpace(errorText) ? "Failed to upload PDF." : errorText;
+                ErrorMessage = string.IsNullOrWhiteSpace(errorText) ? "Failed to upload PDF(s)." : errorText;
             }
 
             return Page();

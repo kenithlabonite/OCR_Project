@@ -72,6 +72,60 @@ namespace OCR_Frontend.Pages
              return RedirectToPage();
         }
 
+        public async Task<IActionResult> OnPostDownloadQuestionsPdfAsync(int id)
+        {
+             var client = _httpClientFactory.CreateClient("BackendClient");
+             var token = Request.Cookies["AuthToken"];
+
+             if (!string.IsNullOrEmpty(token))
+             {
+                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+             }
+
+             var response = await client.GetAsync($"/api/exam/{id}/download-questions-pdf");
+             
+             if (response.IsSuccessStatusCode)
+             {
+                 var stream = await response.Content.ReadAsStreamAsync();
+                 var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/pdf";
+                 
+                 var contentDisposition = response.Content.Headers.ContentDisposition;
+                 var fileName = contentDisposition?.FileNameStar ?? contentDisposition?.FileName ?? $"Questionnaire_Questions_{id}.pdf";
+                 
+                 return File(stream, contentType, fileName.Trim('"'));
+             }
+             
+             ErrorMessage = "Failed to download the Questionnaire PDF.";
+             return RedirectToPage();
+        }
+
+        public async Task<IActionResult> OnPostDownloadAnswersPdfAsync(int id)
+        {
+             var client = _httpClientFactory.CreateClient("BackendClient");
+             var token = Request.Cookies["AuthToken"];
+
+             if (!string.IsNullOrEmpty(token))
+             {
+                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+             }
+
+             var response = await client.GetAsync($"/api/exam/{id}/download-answers-pdf");
+             
+             if (response.IsSuccessStatusCode)
+             {
+                 var stream = await response.Content.ReadAsStreamAsync();
+                 var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/pdf";
+                 
+                 var contentDisposition = response.Content.Headers.ContentDisposition;
+                 var fileName = contentDisposition?.FileNameStar ?? contentDisposition?.FileName ?? $"AnswerKey_{id}.pdf";
+                 
+                 return File(stream, contentType, fileName.Trim('"'));
+             }
+             
+             ErrorMessage = "Failed to download the Answer Key PDF.";
+             return RedirectToPage();
+        }
+
         public class ExamDto
         {
             public int ExamId { get; set; }

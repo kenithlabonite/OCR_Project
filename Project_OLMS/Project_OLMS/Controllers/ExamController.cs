@@ -277,12 +277,20 @@ namespace Project_OLMS.Controllers
                         {
                             column.Spacing(20);
 
+                            // Instructions block
+                            column.Item().Background(Colors.Grey.Lighten4).Padding(10).Column(instrCol =>
+                            {
+                                instrCol.Spacing(3);
+                                instrCol.Item().Text("INSTRUCTIONS:").Bold().FontSize(11).FontColor(Colors.Red.Darken2);
+                                instrCol.Item().Text("Write your final answer BEFORE the item number for each question (e.g., A 1.). Answers written anywhere else will not be counted.").FontSize(11).Italic();
+                            });
+
                             foreach (var q in questions)
                             {
                                 column.Item().Column(questionCol =>
                                 {
                                     questionCol.Spacing(5);
-                                    questionCol.Item().Text($"Q{q.Number}: {q.QuestionText}").SemiBold().FontSize(12);
+                                    questionCol.Item().Text($"_______ {q.Number}. {q.QuestionText}").SemiBold().FontSize(12);
 
                                     var optionsList = new[]
                                     {
@@ -294,7 +302,7 @@ namespace Project_OLMS.Controllers
 
                                     foreach (var opt in optionsList)
                                     {
-                                        questionCol.Item().PaddingLeft(15).Text($"{opt.Key}. {opt.Value}");
+                                        questionCol.Item().PaddingLeft(45).Text($"{opt.Key}. {opt.Value}");
                                     }
                                 });
                             }

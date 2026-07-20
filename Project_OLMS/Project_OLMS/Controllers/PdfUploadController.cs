@@ -27,22 +27,30 @@ namespace Project_OLMS.Controllers
         ///   • UploadedByUserId — optional user id
         /// </summary>
         [HttpPost]
-        [RequestSizeLimit(MaxFileSizeBytes)]
+        [RequestSizeLimit(MaxFileSizeBytes * 5)]
         public async Task<IActionResult> Upload(
-            IFormFile file,
+            List<IFormFile> files,
             [FromForm] UploadPdfRequest metadata)
         {
             // ── Validate file presence ────────────────────────────────────
-            if (file == null || file.Length == 0)
-                return BadRequest(new { message = "No file was provided or the file is empty." });
+            if (files == null || files.Count == 0)
+                return BadRequest(new { message = "No files were provided or the upload list is empty." });
 
-            // ── Validate MIME type ────────────────────────────────────────
-            if (!string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase))
-                return BadRequest(new { message = "Only PDF files are accepted." });
+            var responses = new List<DocumentResponse>();
 
-            // ── Validate file size ────────────────────────────────────────
-            if (file.Length > MaxFileSizeBytes)
-                return BadRequest(new { message = $"File exceeds the maximum allowed size of {MaxFileSizeBytes / (1024 * 1024)} MB." });
+            foreach (var file in files)
+            {
+                if (file.Length == 0)
+                    continue;
+
+                // ── Validate MIME type ────────────────────────────────────────
+                if (!string.Equals(file.ContentType, "application/pdf", StringComparison.OrdinalIgnoreCase))
+                    return BadRequest(new { message = $"Only PDF files are accepted. Invalid file: '{file.FileName}'" });
+
+                // ── Validate file size ────────────────────────────────────────
+                if (file.Length > MaxFileSizeBytes)
+                    return BadRequest(new { message = $"File '{file.FileName}' exceeds the maximum allowed size of {MaxFileSizeBytes / (1024 * 1024)} MB." });
+            }
 
             // ── Validate optional UserId exists if supplied ───────────────
             if (!string.IsNullOrWhiteSpace(metadata.UploadedByUserId))
@@ -52,31 +60,39 @@ namespace Project_OLMS.Controllers
                     return BadRequest(new { message = $"User with Id '{metadata.UploadedByUserId}' does not exist." });
             }
 
-            // ── Persist file to disk ──────────────────────────────────────
-            string storedPath = await SaveFileToDiskAsync(file);
-
-            // ── AI analysis via Gemini ────────────────────────────────────
-            // Read the saved bytes back for the Gemini request
-            byte[] pdfBytes = await System.IO.File.ReadAllBytesAsync(storedPath);
-            string? aiSummary = await geminiService.AnalyzePdfAsync(pdfBytes, file.FileName);
-
-            // ── Persist metadata to database ──────────────────────────────
-            var document = new Document
+            foreach (var file in files)
             {
-                FileName           = file.FileName,
-                ContentType        = file.ContentType,
-                FileSizeBytes      = file.Length,
-                StoredFilePath     = storedPath,
-                Description        = metadata.Description,
-                AiSummary          = aiSummary,
-                UploadedByUserId   = metadata.UploadedByUserId,
-                UploadedAt         = DateTime.UtcNow
-            };
+                if (file.Length == 0)
+                    continue;
 
-            context.Documents.Add(document);
-            await context.SaveChangesAsync();
+                // ── Persist file to disk ──────────────────────────────────────
+                string storedPath = await SaveFileToDiskAsync(file);
 
-            return Ok(MapToResponse(document));
+                // ── AI analysis via Gemini ────────────────────────────────────
+                // Read the saved bytes back for the Gemini request
+                byte[] pdfBytes = await System.IO.File.ReadAllBytesAsync(storedPath);
+                string? aiSummary = await geminiService.AnalyzePdfAsync(pdfBytes, file.FileName);
+
+                // ── Persist metadata to database ──────────────────────────────
+                var document = new Document
+                {
+                    FileName           = file.FileName,
+                    ContentType        = file.ContentType,
+                    FileSizeBytes      = file.Length,
+                    StoredFilePath     = storedPath,
+                    Description        = metadata.Description,
+                    AiSummary          = aiSummary,
+                    UploadedByUserId   = metadata.UploadedByUserId,
+                    UploadedAt         = DateTime.UtcNow
+                };
+
+                context.Documents.Add(document);
+                await context.SaveChangesAsync();
+
+                responses.Add(MapToResponse(document));
+            }
+
+            return Ok(responses);
         }
 
         // ── Get All ───────────────────────────────────────────────────────────

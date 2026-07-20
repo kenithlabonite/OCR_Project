@@ -24,18 +24,97 @@
             {
                 <div class="col-md-12 mb-4">
                     <div class="card glass-panel shadow-sm">
-                        <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-4 pb-0">
+                        <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-4 pb-3">
                             <h5 class="mb-0">
                                 <i class="bi bi-file-earmark-text text-primary me-2"></i> Document: @exam.DocumentFileName
                             </h5>
                             <div class="d-flex align-items-center gap-3">
                                 <small class="text-muted">Generated: @exam.GeneratedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</small>
-                                <form method="post" asp-page-handler="DownloadPdf">
-                                    <input type="hidden" name="id" value="@exam.ExamId" />
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-file-earmark-pdf"></i> Download PDF
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExam-@exam.ExamId" aria-expanded="false" aria-controls="collapseExam-@exam.ExamId">
+                                        <i class="bi bi-eye"></i> View Details
                                     </button>
-                                </form>
+                                    <form method="post" asp-page-handler="DownloadQuestionsPdf">
+                                        <input type="hidden" name="id" value="@exam.ExamId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-file-earmark-text"></i> Download Questionnaire
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-page-handler="DownloadAnswersPdf">
+                                        <input type="hidden" name="id" value="@exam.ExamId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-key"></i> Download Answer Key
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="collapse" id="collapseExam-@exam.ExamId">
+                            <div class="card-body border-top border-light pt-3">
+                                <!-- Nav tabs -->
+                                <ul class="nav nav-pills mb-3" id="pills-tab-@exam.ExamId" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link active" id="pills-questions-tab-@exam.ExamId" data-bs-toggle="pill" data-bs-target="#pills-questions-@exam.ExamId" type="button" role="tab" aria-controls="pills-questions-@exam.ExamId" aria-selected="true">
+                                            <i class="bi bi-question-circle"></i> Questionnaire
+                                        </button>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <button class="nav-link" id="pills-answers-tab-@exam.ExamId" data-bs-toggle="pill" data-bs-target="#pills-answers-@exam.ExamId" type="button" role="tab" aria-controls="pills-answers-@exam.ExamId" aria-selected="false">
+                                            <i class="bi bi-check-circle"></i> Answer Key
+                                        </button>
+                                    </li>
+                                </ul>
+                                
+                                <!-- Tab content -->
+                                <div class="tab-content" id="pills-tabContent-@exam.ExamId">
+                                    <!-- Questionnaire Tab -->
+                                    <div class="tab-pane fade show active" id="pills-questions-@exam.ExamId" role="tabpanel" aria-labelledby="pills-questions-tab-@exam.ExamId">
+                                        <div class="alert alert-warning border-0 shadow-sm mb-3">
+                                            <strong><i class="bi bi-exclamation-triangle"></i> INSTRUCTIONS:</strong>
+                                            <span class="fst-italic">Write your final answer BEFORE the item number for each question (e.g., A 1.). Answers written anywhere else will not be counted.</span>
+                                        </div>
+                                        <div class="list-group list-group-flush">
+                                            @foreach (var q in exam.Questions)
+                                            {
+                                                <div class="list-group-item bg-transparent border-0 px-0 py-3">
+                                                    <h6 class="fw-semibold">_______ @q.Number. @q.QuestionText</h6>
+                                                    <div class="ps-4 mt-2">
+                                                        <div class="form-check mb-1">
+                                                            <label class="form-check-label">A. @q.OptionA</label>
+                                                        </div>
+                                                        <div class="form-check mb-1">
+                                                            <label class="form-check-label">B. @q.OptionB</label>
+                                                        </div>
+                                                        <div class="form-check mb-1">
+                                                            <label class="form-check-label">C. @q.OptionC</label>
+                                                        </div>
+                                                        <div class="form-check mb-1">
+                                                            <label class="form-check-label">D. @q.OptionD</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Answer Key Tab -->
+                                    <div class="tab-pane fade" id="pills-answers-@exam.ExamId" role="tabpanel" aria-labelledby="pills-answers-tab-@exam.ExamId">
+                                        <div class="list-group list-group-flush">
+                                            @foreach (var q in exam.Questions)
+                                            {
+                                                <div class="list-group-item bg-transparent border-0 px-0 py-3">
+                                                    <h6 class="fw-bold text-success"><i class="bi bi-check2-circle"></i> Question @q.Number: Option @q.CorrectAnswer</h6>
+                                                    @if (!string.IsNullOrEmpty(q.Explanation))
+                                                    {
+                                                        <p class="text-muted mb-0 ps-4">
+                                                            <span class="fw-semibold text-primary">Explanation:</span> @q.Explanation
+                                                        </p>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

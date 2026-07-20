@@ -228,6 +228,7 @@ namespace Project_OLMS.Services
                     $"A PDF document named '{fileName}' is attached. " +
                     "Read it carefully and create exactly 10 multiple-choice questions that test " +
                     "understanding of the document's content. " +
+                    "Do not include phrases like 'According to the document', 'Based on the text', 'According to the PDF', or similar in the question text. Ask the questions directly. " +
                     "Your response must be ONLY a raw JSON array — no markdown, " +
                     "no code fences, no explanatory text before or after. " +
                     "Each element of the array must have EXACTLY these fields:\n" +
