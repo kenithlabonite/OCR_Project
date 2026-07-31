@@ -53,7 +53,7 @@ namespace OCR_Frontend.Pages
                 return Page();
             }
 
-            return RedirectToPage("/Login");
+            return RedirectToPage("/VerifyEmail", new { email = Email });
         }
     }
 }

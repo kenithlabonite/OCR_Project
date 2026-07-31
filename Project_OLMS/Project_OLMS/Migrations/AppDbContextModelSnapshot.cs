@@ -22,6 +22,45 @@ namespace Project_OLMS.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
+            modelBuilder.Entity("Project_OLMS.Models.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Details")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Username")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("Project_OLMS.Models.Auth", b =>
                 {
                     b.Property<string>("Id")
@@ -32,6 +71,9 @@ namespace Project_OLMS.Migrations
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("tinyint(1)");
 
                     b.Property<bool>("IsEmailVerified")
                         .HasColumnType("tinyint(1)");
@@ -47,6 +89,11 @@ namespace Project_OLMS.Migrations
                     b.Property<string>("ResetPasswordOtp")
                         .HasMaxLength(6)
                         .HasColumnType("varchar(6)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<string>("Token")
                         .HasColumnType("longtext");
@@ -136,6 +183,52 @@ namespace Project_OLMS.Migrations
                     b.ToTable("ExamQuestionnaires");
                 });
 
+            modelBuilder.Entity("Project_OLMS.Models.GradedAnswerSheet", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AnswersJson")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("CorrectCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ExamId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("GradedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ImagePathsJson")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("RawOcrText")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<double>("ScorePercentage")
+                        .HasColumnType("double");
+
+                    b.Property<string>("StudentName")
+                        .IsRequired()
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<int>("TotalQuestions")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExamId");
+
+                    b.ToTable("GradedAnswerSheets");
+                });
+
             modelBuilder.Entity("Project_OLMS.Models.Document", b =>
                 {
                     b.HasOne("Project_OLMS.Models.Auth", "UploadedByUser")
@@ -155,6 +248,17 @@ namespace Project_OLMS.Migrations
                         .IsRequired();
 
                     b.Navigation("Document");
+                });
+
+            modelBuilder.Entity("Project_OLMS.Models.GradedAnswerSheet", b =>
+                {
+                    b.HasOne("Project_OLMS.Models.ExamQuestionnaire", "Exam")
+                        .WithMany()
+                        .HasForeignKey("ExamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Exam");
                 });
 #pragma warning restore 612, 618
         }

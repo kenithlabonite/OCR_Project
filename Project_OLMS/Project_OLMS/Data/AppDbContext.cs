@@ -9,6 +9,8 @@ namespace Project_OLMS.Data
         public DbSet<Auth> Users { get; set; }
         public DbSet<Document> Documents { get; set; }
         public DbSet<ExamQuestionnaire> ExamQuestionnaires { get; set; }
+        public DbSet<GradedAnswerSheet> GradedAnswerSheets { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -54,6 +56,22 @@ namespace Project_OLMS.Data
             // Index to speed up "get exams by document" queries
             modelBuilder.Entity<ExamQuestionnaire>()
                 .HasIndex(e => e.DocumentId);
+
+            // ── GradedAnswerSheet entity configuration ───────────────────
+            modelBuilder.Entity<GradedAnswerSheet>().HasKey(g => g.Id);
+
+            modelBuilder.Entity<GradedAnswerSheet>()
+                .Property(g => g.Id)
+                .ValueGeneratedOnAdd();
+
+            modelBuilder.Entity<GradedAnswerSheet>()
+                .HasOne(g => g.Exam)
+                .WithMany()
+                .HasForeignKey(g => g.ExamId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<GradedAnswerSheet>()
+                .HasIndex(g => g.ExamId);
 
             base.OnModelCreating(modelBuilder);
         }

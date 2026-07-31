@@ -1,17 +1,164 @@
 @page
 @model OCR_Frontend.Pages.DashboardModel
 @{
-    ViewData["Title"] = "Dashboard";
+    ViewData["Title"] = "Dashboard Overview";
 }
 
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="mb-0">Overview</h2>
-            <p class="text-muted mb-0">Welcome back, check your latest OCR processing stats.</p>
+    <!-- Header/Greeting Banner -->
+    <div class="glass-panel p-4 mb-4 border-0 shadow-sm rounded-4 position-relative overflow-hidden bg-gradient" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="display-6 fw-bold mb-2" style="background: linear-gradient(to right, var(--primary-color), #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Overview & Insights</h1>
+                <p class="text-muted fs-5 mb-0">
+                    @if (!string.IsNullOrEmpty(Model.DisplayName))
+                    {
+                        <span>Welcome back, <strong>@Model.DisplayName</strong>! Analyze your OCR metrics and manage exam answer grading tools here.</span>
+                    }
+                    else
+                    {
+                        <span>Welcome back! Analyze your OCR metrics and manage exam answer grading tools here.</span>
+                    }
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <span class="badge bg-light text-dark border p-2 px-3 rounded-pill d-inline-flex align-items-center gap-2">
+                    <span class="position-relative d-flex">
+                        <span class="rounded-circle bg-success d-inline-block" style="width:9px;height:9px;"></span>
+                        <span class="position-absolute top-0 start-0 rounded-circle bg-success opacity-75 animate-ping" style="width:9px;height:9px;animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></span>
+                    </span>
+                    @if (!string.IsNullOrEmpty(Model.DisplayName))
+                    {
+                        <span><i class="bi bi-person-fill me-1 text-primary"></i>@Model.DisplayName</span>
+                    }
+                    else
+                    {
+                        <span><i class="bi bi-clock me-1 text-primary"></i> Live Session Active</span>
+                    }
+                </span>
+                @if (!string.IsNullOrEmpty(Model.DisplayEmail))
+                {
+                    <div class="mt-1"><small class="text-muted"><i class="bi bi-envelope me-1"></i>@Model.DisplayEmail</small></div>
+                }
+            </div>
         </div>
-        <!-- <button class="btn btn-primary d-flex align-items-center gap-2">
-            <i class="bi bi-cloud-upload"></i> Upload Document
-        </button> -->
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="row g-4 mb-5">
+        <!-- Processed Docs -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card glass-panel border-0 shadow-sm h-100 transition-all hover-translate">
+                <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="text-muted fw-semibold">Processed PDFs</span>
+                        <div class="rounded-circle p-2 bg-primary-subtle text-primary">
+                            <i class="bi bi-file-earmark-pdf-fill fs-4"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="display-5 fw-bold mb-1 text-dark">@Model.TotalProcessed</h2>
+                        <span class="text-success small fw-medium"><i class="bi bi-arrow-up-short"></i> Active uploaded sheets</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Rate -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card glass-panel border-0 shadow-sm h-100 transition-all hover-translate">
+                <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="text-muted fw-semibold">OCR Accuracy</span>
+                        <div class="rounded-circle p-2 bg-success-subtle text-success">
+                            <i class="bi bi-check-circle-fill fs-4"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="display-5 fw-bold mb-1 text-dark">@Model.SuccessRate.ToString("0.0")%</h2>
+                        <span class="text-muted small">Character detection rate</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Failed Jobs -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card glass-panel border-0 shadow-sm h-100 transition-all hover-translate">
+                <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="text-muted fw-semibold">Failed Detections</span>
+                        <div class="rounded-circle p-2 bg-danger-subtle text-danger">
+                            <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="display-5 fw-bold mb-1 text-dark">@Model.FailedJobs</h2>
+                        <span class="text-muted small">Sheets needing manual check</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Credits Used -->
+        <div class="col-xl-3 col-md-6">
+            <div class="card glass-panel border-0 shadow-sm h-100 transition-all hover-translate">
+                <div class="card-body p-4 d-flex flex-column justify-content-between">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <span class="text-muted fw-semibold">Credits Allocated</span>
+                        <div class="rounded-circle p-2 bg-info-subtle text-info">
+                            <i class="bi bi-lightning-charge-fill fs-4"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h2 class="display-5 fw-bold mb-1 text-dark">@Model.CreditsUsed</h2>
+                        <span class="text-muted small">AI tokens and resource usage</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Tools section -->
+    <h3 class="mb-4 fw-bold"><i class="bi bi-grid-fill me-2 text-primary"></i> Quick Actions &amp; OCR Tools</h3>
+    <div class="row g-4">
+        <!-- Card 1: Upload Documents -->
+        <div class="col-md-4">
+            <a href="/UploadPdf" class="d-block text-decoration-none card glass-panel border-0 shadow-sm h-100 p-3 hover-shadow-lg transition-all hover-translate">
+                <div class="card-body text-center py-4">
+                    <div class="bg-primary text-white rounded-4 p-3 d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width:64px; height:64px;">
+                        <i class="bi bi-cloud-arrow-up fs-2"></i>
+                    </div>
+                    <h5 class="text-dark fw-bold mb-2">Upload Test Papers</h5>
+                    <p class="text-muted small mb-0">Upload source textbooks or exam questions in PDF format for AI generation.</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Card 2: View Document Library -->
+        <div class="col-md-4">
+            <a href="/Documents" class="d-block text-decoration-none card glass-panel border-0 shadow-sm h-100 p-3 hover-shadow-lg transition-all hover-translate">
+                <div class="card-body text-center py-4">
+                    <div class="bg-success text-white rounded-4 p-3 d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width:64px; height:64px;">
+                        <i class="bi bi-folder2-open fs-2"></i>
+                    </div>
+                    <h5 class="text-dark fw-bold mb-2">My Documents</h5>
+                    <p class="text-muted small mb-0">Browse PDF documents, check AI generated summary, or start exam generator.</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- Card 3: Grade Exams -->
+        <div class="col-md-4">
+            <a href="/Questionnaires" class="d-block text-decoration-none card glass-panel border-0 shadow-sm h-100 p-3 hover-shadow-lg transition-all hover-translate">
+                <div class="card-body text-center py-4">
+                    <div class="bg-purple text-white rounded-4 p-3 d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="background-color: #8b5cf6; width:64px; height:64px;">
+                        <i class="bi bi-robot fs-2"></i>
+                    </div>
+                    <h5 class="text-dark fw-bold mb-2">Exams &amp; Answer Grading</h5>
+                    <p class="text-muted small mb-0">Download questionnaire PDFs or grade student answer sheets with OCR scanner.</p>
+                </div>
+            </a>
+        </div>
     </div>
 </div>

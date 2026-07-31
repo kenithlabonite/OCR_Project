@@ -7,6 +7,9 @@
 <div class="container mt-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="bi bi-ui-checks" style="color: var(--primary-color);"></i> Exam Questionnaires</h2>
+        <a asp-page="/GradedSheets" class="btn btn-outline-success">
+            <i class="bi bi-file-earmark-check me-1"></i> View Graded Student Sheets
+        </a>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
@@ -46,6 +49,9 @@
                                             <i class="bi bi-key"></i> Download Answer Key
                                         </button>
                                     </form>
+                                    <a href="/GradeExam?examId=@exam.ExamId" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-robot"></i> Grade Student Sheet
+                                    </a>
                                 </div>
                             </div>
                         </div>

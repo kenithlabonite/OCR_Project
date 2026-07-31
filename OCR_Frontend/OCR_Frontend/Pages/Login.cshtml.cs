@@ -50,10 +50,25 @@ namespace OCR_Frontend.Pages
             Response.Cookies.Append("AuthToken", result.Token, new Microsoft.AspNetCore.Http.CookieOptions
             {
                 HttpOnly = true,
-                Secure = false, // Set to false for localhost HTTP; true in production
+                Secure = false,
                 SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax,
                 Expires = DateTimeOffset.UtcNow.AddHours(1)
             });
+
+            // Store display info in readable cookies (not sensitive)
+            var displayCookieOptions = new Microsoft.AspNetCore.Http.CookieOptions
+            {
+                HttpOnly = false,
+                Secure = false,
+                SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddHours(1)
+            };
+            if (!string.IsNullOrEmpty(result.Username))
+                Response.Cookies.Append("DisplayName", result.Username, displayCookieOptions);
+            if (!string.IsNullOrEmpty(result.Email))
+                Response.Cookies.Append("DisplayEmail", result.Email, displayCookieOptions);
+            if (!string.IsNullOrEmpty(result.Role))
+                Response.Cookies.Append("UserRole", result.Role, displayCookieOptions);
 
             return RedirectToPage("/Dashboard");
         }
@@ -61,6 +76,9 @@ namespace OCR_Frontend.Pages
         private class LoginResponse
         {
             public string? Token { get; set; }
+            public string? Username { get; set; }
+            public string? Email { get; set; }
+            public string? Role { get; set; }
         }
     }
 }

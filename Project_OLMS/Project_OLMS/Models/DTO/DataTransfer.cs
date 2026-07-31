@@ -144,5 +144,21 @@ namespace Project_OLMS.Models.DTO
         public double ScorePercentage { get; set; }
         public string RawOcrText { get; set; } = string.Empty;
         public List<CheckedAnswerItem> Results { get; set; } = new();
+        public List<string> ImageUrls { get; set; } = new();
+    }
+
+    public class GradedAnswerSheetResponse
+    {
+        public int Id { get; set; }
+        public int ExamId { get; set; }
+        public string DocumentFileName { get; set; } = string.Empty;
+        public string StudentName { get; set; } = string.Empty;
+        public DateTime GradedAt { get; set; }
+        public int TotalQuestions { get; set; }
+        public int CorrectCount { get; set; }
+        public double ScorePercentage { get; set; }
+        public string RawOcrText { get; set; } = string.Empty;
+        public List<CheckedAnswerItem> Results { get; set; } = new();
+        public List<string> ImageUrls { get; set; } = new();
     }
 }

@@ -12,7 +12,8 @@ namespace Project_OLMS.Controllers
     public class PdfUploadController(
         AppDbContext context,
         IWebHostEnvironment env,
-        IGeminiService geminiService) : ControllerBase
+        IGeminiService geminiService,
+        IAuditLogService auditLogService) : ControllerBase
     {
         // Maximum allowed file size: 20 MB
         private const long MaxFileSizeBytes = 20 * 1024 * 1024;
@@ -89,6 +90,13 @@ namespace Project_OLMS.Controllers
                 context.Documents.Add(document);
                 await context.SaveChangesAsync();
 
+                await auditLogService.LogDocumentExamAsync(
+                    action: "PDF Uploaded",
+                    details: $"Uploaded document '{file.FileName}' ({(file.Length / 1024.0):F1} KB, ID: {document.Id})",
+                    userId: metadata.UploadedByUserId,
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+                );
+
                 responses.Add(MapToResponse(document));
             }
 
@@ -160,10 +168,19 @@ namespace Project_OLMS.Controllers
             if (System.IO.File.Exists(document.StoredFilePath))
                 System.IO.File.Delete(document.StoredFilePath);
 
+            string fileName = document.FileName;
+            int docId = document.Id;
+
             context.Documents.Remove(document);
             await context.SaveChangesAsync();
 
-            return Ok(new { message = $"Document '{document.FileName}' was deleted successfully." });
+            await auditLogService.LogDocumentExamAsync(
+                action: "PDF Deleted",
+                details: $"Deleted document '{fileName}' (ID: {docId})",
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+            );
+
+            return Ok(new { message = $"Document '{fileName}' was deleted successfully." });
         }
 
         // ── Private Helpers ───────────────────────────────────────────────────

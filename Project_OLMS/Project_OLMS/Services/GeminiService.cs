@@ -20,6 +20,18 @@ namespace Project_OLMS.Services
         /// </summary>
         Task<(List<QuestionItem>? Questions, string? ErrorDetail)> GenerateExamAsync(
             byte[] pdfBytes, string fileName);
+
+        /// <summary>
+        /// Scans an image of a student answer sheet and extracts question numbers and student answers using Gemini Vision.
+        /// </summary>
+        Task<(Dictionary<int, string>? Answers, string RawText, string? ErrorDetail)> ScanAnswerSheetAsync(
+            byte[] imageBytes, string mimeType);
+
+        /// <summary>
+        /// Scans multiple images of a multi-page student answer sheet and extracts question numbers and answers across all pages using Gemini Vision.
+        /// </summary>
+        Task<(Dictionary<int, string>? Answers, string RawText, string? ErrorDetail)> ScanAnswerSheetsAsync(
+            List<(byte[] Bytes, string MimeType)> imageFiles);
     }
 
     public class GeminiService : IGeminiService
@@ -48,28 +60,39 @@ namespace Project_OLMS.Services
 
         // ── Direct HTTP Call to Gemini (Bypassing Mscc.GenerativeAI length validation) ──
 
-        private async Task<string?> CallGeminiApiDirectlyAsync(string prompt, byte[] pdfBytes)
+        private async Task<string?> CallGeminiApiDirectlyAsync(string prompt, byte[] fileBytes, string mimeType = "application/pdf")
+        {
+            return await CallGeminiApiForMultipleImagesAsync(prompt, new List<(byte[] Bytes, string MimeType)> { (fileBytes, mimeType) });
+        }
+
+        private async Task<string?> CallGeminiApiForMultipleImagesAsync(string prompt, List<(byte[] Bytes, string MimeType)> files)
         {
             var url = $"https://generativelanguage.googleapis.com/v1beta/models/{ModelId}:generateContent?key={_apiKey}";
             
+            var partsList = new List<object>
+            {
+                new { text = prompt }
+            };
+
+            foreach (var file in files)
+            {
+                partsList.Add(new
+                {
+                    inline_data = new
+                    {
+                        mime_type = string.IsNullOrWhiteSpace(file.MimeType) ? "image/jpeg" : file.MimeType,
+                        data = Convert.ToBase64String(file.Bytes)
+                    }
+                });
+            }
+
             var payload = new
             {
                 contents = new[]
                 {
                     new
                     {
-                        parts = new object[]
-                        {
-                            new { text = prompt },
-                            new
-                            {
-                                inline_data = new
-                                {
-                                    mime_type = "application/pdf",
-                                    data = Convert.ToBase64String(pdfBytes)
-                                }
-                            }
-                        }
+                        parts = partsList.ToArray()
                     }
                 }
             };
@@ -97,54 +120,7 @@ namespace Project_OLMS.Services
 
                         if (isRetryable && attempt < maxAttempts)
                         {
-                            int? parsedDelayMs = null;
-                            if (statusCode == System.Net.HttpStatusCode.TooManyRequests && !string.IsNullOrEmpty(responseBody))
-                            {
-                                try
-                                {
-                                    using var errorDoc = JsonDocument.Parse(responseBody);
-                                    if (errorDoc.RootElement.TryGetProperty("error", out var errorEl) &&
-                                        errorEl.TryGetProperty("details", out var detailsEl) &&
-                                        detailsEl.ValueKind == JsonValueKind.Array)
-                                    {
-                                        foreach (var detail in detailsEl.EnumerateArray())
-                                        {
-                                            if (detail.TryGetProperty("@type", out var typeEl) &&
-                                                typeEl.GetString() == "type.googleapis.com/google.rpc.RetryInfo" &&
-                                                detail.TryGetProperty("retryDelay", out var delayEl))
-                                            {
-                                                var delayStr = delayEl.GetString();
-                                                if (!string.IsNullOrEmpty(delayStr) && delayStr.EndsWith("s"))
-                                                {
-                                                    var secondsStr = delayStr.Substring(0, delayStr.Length - 1);
-                                                    if (double.TryParse(secondsStr, System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double seconds))
-                                                    {
-                                                        parsedDelayMs = (int)(seconds * 1000);
-                                                        break;
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                catch (Exception ex)
-                                {
-                                    _logger.LogWarning(ex, "Failed to parse RetryInfo from error body: {ResponseBody}", responseBody);
-                                }
-                            }
-
-                            int delayMs;
-                            if (parsedDelayMs.HasValue)
-                            {
-                                delayMs = parsedDelayMs.Value + random.Next(500, 1500);
-                                _logger.LogWarning("Gemini API requested retry delay. Retrying in {DelayMs}ms...", delayMs);
-                            }
-                            else
-                            {
-                                delayMs = (int)(Math.Pow(2, attempt) * 1000) + random.Next(0, 1000);
-                                _logger.LogWarning("Retrying Gemini API call (exponential backoff) in {DelayMs}ms...", delayMs);
-                            }
-
+                            int delayMs = (int)(Math.Pow(2, attempt) * 1000) + random.Next(0, 1000);
                             await Task.Delay(delayMs);
                             continue;
                         }
@@ -156,7 +132,6 @@ namespace Project_OLMS.Services
                     using var jsonDoc = JsonDocument.Parse(responseBody);
                     try 
                     {
-                        // Parse standard Gemini REST response
                         var text = jsonDoc.RootElement
                             .GetProperty("candidates")[0]
                             .GetProperty("content")
@@ -176,7 +151,6 @@ namespace Project_OLMS.Services
                 {
                     _logger.LogWarning(ex, "HTTP request failed on attempt {Attempt}/{MaxAttempts}.", attempt, maxAttempts);
                     int delayMs = (int)(Math.Pow(2, attempt) * 1000) + random.Next(0, 1000);
-                    _logger.LogWarning("Retrying Gemini API call after network/timeout error in {DelayMs}ms...", delayMs);
                     await Task.Delay(delayMs);
                 }
             }
@@ -323,6 +297,205 @@ namespace Project_OLMS.Services
                 return null;
 
             return text[start..(end + 1)].Trim();
+        }
+
+        /// <summary>
+        /// Finds the first { … } JSON object in the text, stripping any markdown
+        /// fences or extra prose the model may have added.
+        /// </summary>
+        private static string? ExtractJsonObject(string text)
+        {
+            text = Regex.Replace(text, @"^```[a-zA-Z]*\s*", "", RegexOptions.Multiline).TrimStart();
+            text = Regex.Replace(text, @"```\s*$", "", RegexOptions.Multiline).TrimEnd();
+
+            int start = text.IndexOf('{');
+            int end   = text.LastIndexOf('}');
+
+            if (start < 0 || end < 0 || end <= start)
+                return null;
+
+            return text[start..(end + 1)].Trim();
+        }
+
+        // ── Answer Sheet Scanner (Gemini Vision) ──────────────────────────────
+
+        public async Task<(Dictionary<int, string>? Answers, string RawText, string? ErrorDetail)> ScanAnswerSheetAsync(
+            byte[] imageBytes, string mimeType)
+        {
+            if (imageBytes.Length > MaxInlineSizeBytes)
+            {
+                return (null, string.Empty, "Image file exceeds maximum allowed size (20 MB).");
+            }
+
+            try
+            {
+                string prompt =
+                    "You are an automated exam answer sheet scanner and grader AI. " +
+                    "An image of a student's answer sheet or questionnaire is attached. " +
+                    "Carefully examine each question item (e.g. 1, 2, 3...) and find the student's handwritten or selected answer letter (A, B, C, or D).\n" +
+                    "Note: Answers are written on blank lines before item numbers (e.g. 'B 1.', 'A 2.', 'b 5.'), " +
+                    "written next to question text, or marked among the options.\n" +
+                    "Return your analysis strictly as a JSON object — no markdown, no code blocks, no prose.\n" +
+                    "JSON Structure:\n" +
+                    "{\n" +
+                    "  \"answers\": [\n" +
+                    "    { \"questionNumber\": 1, \"scannedAnswer\": \"B\" },\n" +
+                    "    { \"questionNumber\": 2, \"scannedAnswer\": \"B\" }\n" +
+                    "  ],\n" +
+                    "  \"rawExtractedText\": \"A short transcribed summary of the text and answers recognized on the page.\"\n" +
+                    "}\n\n" +
+                    "Rules:\n" +
+                    "1. scannedAnswer MUST be a single uppercase letter: A, B, C, or D.\n" +
+                    "2. If an item has no answer or is unreadable, omit that item or set scannedAnswer to empty string.\n" +
+                    "3. Start your response with { and end with }.";
+
+                _logger.LogInformation("[GeminiService] Sending Vision AI answer sheet scan request...");
+
+                string effectiveMime = string.IsNullOrWhiteSpace(mimeType) ? "image/jpeg" : mimeType;
+                string? rawResponse = await CallGeminiApiDirectlyAsync(prompt, imageBytes, effectiveMime);
+
+                if (string.IsNullOrWhiteSpace(rawResponse))
+                {
+                    return (null, string.Empty, "Gemini returned empty response for image scan.");
+                }
+
+                string? jsonObj = ExtractJsonObject(rawResponse);
+                if (jsonObj == null)
+                {
+                    _logger.LogWarning("[GeminiService] Could not extract JSON object from Vision response: {Raw}", rawResponse);
+                    return (null, rawResponse, "Could not parse JSON output from AI response.");
+                }
+
+                using var doc = JsonDocument.Parse(jsonObj);
+                var root = doc.RootElement;
+
+                var resultDict = new Dictionary<int, string>();
+                string rawText = rawResponse;
+
+                if (root.TryGetProperty("rawExtractedText", out var rawTextProp) && rawTextProp.ValueKind == JsonValueKind.String)
+                {
+                    rawText = rawTextProp.GetString() ?? rawResponse;
+                }
+
+                if (root.TryGetProperty("answers", out var answersProp) && answersProp.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in answersProp.EnumerateArray())
+                    {
+                        if (item.TryGetProperty("questionNumber", out var qNumProp) && qNumProp.TryGetInt32(out int qNum))
+                        {
+                            string ansStr = string.Empty;
+                            if (item.TryGetProperty("scannedAnswer", out var ansProp) && ansProp.ValueKind == JsonValueKind.String)
+                            {
+                                ansStr = ansProp.GetString()?.Trim().ToUpper() ?? string.Empty;
+                            }
+
+                            if (!string.IsNullOrEmpty(ansStr) && Regex.IsMatch(ansStr, @"^[A-D]$"))
+                            {
+                                resultDict[qNum] = ansStr;
+                            }
+                        }
+                    }
+                }
+
+                return (resultDict, rawText, null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[GeminiService] Answer sheet vision scan failed.");
+                return (null, string.Empty, ex.Message);
+            }
+        }
+
+        public async Task<(Dictionary<int, string>? Answers, string RawText, string? ErrorDetail)> ScanAnswerSheetsAsync(
+            List<(byte[] Bytes, string MimeType)> imageFiles)
+        {
+            if (imageFiles == null || imageFiles.Count == 0)
+            {
+                return (null, string.Empty, "No images provided for scanning.");
+            }
+
+            if (imageFiles.Count == 1)
+            {
+                return await ScanAnswerSheetAsync(imageFiles[0].Bytes, imageFiles[0].MimeType);
+            }
+
+            try
+            {
+                string prompt =
+                    "You are an automated exam answer sheet scanner and grader AI. " +
+                    $"Attached are {imageFiles.Count} page image(s) of a student's completed answer sheet / questionnaire. " +
+                    "Carefully examine all attached page images together, read every question item (e.g. 1, 2, 3, 4, 5, 6, 7, 8, 9, 10...) across all pages, and identify the student's handwritten or selected answer letter (A, B, C, or D).\n" +
+                    "Note: Answers are written on blank lines before item numbers (e.g. 'B 1.', 'A 2.', 'b 5.'), " +
+                    "written next to question text, or marked among the options.\n" +
+                    "Return your analysis strictly as a JSON object — no markdown, no code blocks, no prose.\n" +
+                    "JSON Structure:\n" +
+                    "{\n" +
+                    "  \"answers\": [\n" +
+                    "    { \"questionNumber\": 1, \"scannedAnswer\": \"B\" },\n" +
+                    "    { \"questionNumber\": 2, \"scannedAnswer\": \"B\" }\n" +
+                    "  ],\n" +
+                    "  \"rawExtractedText\": \"A short transcribed summary of all recognized questions and student answers across all pages.\"\n" +
+                    "}\n\n" +
+                    "Rules:\n" +
+                    "1. scannedAnswer MUST be a single uppercase letter: A, B, C, or D.\n" +
+                    "2. Combine all question items from all page images into a single complete answers list.\n" +
+                    "3. If an item has no answer or is unreadable, omit that item or set scannedAnswer to empty string.\n" +
+                    "4. Start your response with { and end with }.";
+
+                _logger.LogInformation("[GeminiService] Sending Vision AI multi-page scan request for {Count} pages...", imageFiles.Count);
+
+                string? rawResponse = await CallGeminiApiForMultipleImagesAsync(prompt, imageFiles);
+
+                if (string.IsNullOrWhiteSpace(rawResponse))
+                {
+                    return (null, string.Empty, "Gemini returned empty response for multi-image scan.");
+                }
+
+                string? jsonObj = ExtractJsonObject(rawResponse);
+                if (jsonObj == null)
+                {
+                    _logger.LogWarning("[GeminiService] Could not extract JSON object from multi-page Vision response: {Raw}", rawResponse);
+                    return (null, rawResponse, "Could not parse JSON output from AI response.");
+                }
+
+                using var doc = JsonDocument.Parse(jsonObj);
+                var root = doc.RootElement;
+
+                var resultDict = new Dictionary<int, string>();
+                string rawText = rawResponse;
+
+                if (root.TryGetProperty("rawExtractedText", out var rawTextProp) && rawTextProp.ValueKind == JsonValueKind.String)
+                {
+                    rawText = rawTextProp.GetString() ?? rawResponse;
+                }
+
+                if (root.TryGetProperty("answers", out var answersProp) && answersProp.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var item in answersProp.EnumerateArray())
+                    {
+                        if (item.TryGetProperty("questionNumber", out var qNumProp) && qNumProp.TryGetInt32(out int qNum))
+                        {
+                            string ansStr = string.Empty;
+                            if (item.TryGetProperty("scannedAnswer", out var ansProp) && ansProp.ValueKind == JsonValueKind.String)
+                            {
+                                ansStr = ansProp.GetString()?.Trim().ToUpper() ?? string.Empty;
+                            }
+
+                            if (!string.IsNullOrEmpty(ansStr) && Regex.IsMatch(ansStr, @"^[A-D]$"))
+                            {
+                                resultDict[qNum] = ansStr;
+                            }
+                        }
+                    }
+                }
+
+                return (resultDict, rawText, null);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[GeminiService] Multi-page answer sheet vision scan failed.");
+                return (null, string.Empty, ex.Message);
+            }
         }
     }
 }

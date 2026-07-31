@@ -22,6 +22,10 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<IGeminiService, GeminiService>();
 // ----------------------------------------------
 
+// --- Registered the Audit Log Service here ---
+builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+// ---------------------------------------------
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -38,6 +42,40 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 
 app.UseAuthorization();
+
+// Seed / Ensure user account defaults (IsActive = true, assign Admin role if none exists)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    var users = await db.Users.ToListAsync();
+    if (users.Any())
+    {
+        bool changed = false;
+        foreach (var u in users)
+        {
+            if (!u.IsActive)
+            {
+                u.IsActive = true;
+                changed = true;
+            }
+            if (string.IsNullOrEmpty(u.Role))
+            {
+                u.Role = "User";
+                changed = true;
+            }
+        }
+        // Ensure at least the first user is an Admin
+        if (!users.Any(u => u.Role == "Admin"))
+        {
+            users.First().Role = "Admin";
+            changed = true;
+        }
+        if (changed)
+        {
+            await db.SaveChangesAsync();
+        }
+    }
+}
 
 app.MapControllers();
 

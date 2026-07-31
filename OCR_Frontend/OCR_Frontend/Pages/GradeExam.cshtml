@@ -1,0 +1,164 @@
+@page
+@model OCR_Frontend.Pages.GradeExamModel
+@{
+    ViewData["Title"] = "Grade Student Sheet";
+}
+
+<div class="container mt-5">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-page="/Questionnaires">Questionnaires</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Grade Sheet</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="bi bi-robot text-primary me-2"></i> Grade Student Sheet</h2>
+            <p class="text-muted">Document: <strong>@Model.Exam?.DocumentFileName</strong></p>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i> @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row">
+        <!-- Left panel: Upload Form -->
+        <div class="col-lg-4 mb-4">
+            <div class="card glass-panel shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3"><i class="bi bi-upload text-primary me-2"></i> Upload Answer Sheet</h5>
+                    <p class="text-muted small">Upload an image (PNG, JPG, or JPEG) of the student's answered test paper. The AI will scan the numbers and option letters (e.g. "1. A", "2. B").</p>
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold" asp-for="StudentName">Student Name <span class="text-muted fw-normal">(optional)</span></label>
+                            <input asp-for="StudentName" type="text" class="form-control" placeholder="e.g. Juan dela Cruz" />
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold" asp-for="StudentAnswerSheet">Select Image</label>
+                            <input asp-for="StudentAnswerSheets" type="file" class="form-control" accept="image/*" multiple required />
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2">
+                            <i class="bi bi-cpu me-2"></i> Scan &amp; Grade Sheet
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            @if (Model.GradingResult != null)
+            {
+                <div class="card glass-panel shadow-sm border-0 mt-4">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3"><i class="bi bi-file-text text-secondary me-2"></i> Raw OCR Extracted Text</h5>
+                        <pre class="bg-dark text-light p-3 rounded" style="white-space: pre-wrap; font-size: 0.85rem; max-height: 250px; overflow-y: auto;">@Model.GradingResult.RawOcrText</pre>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Right panel: Results -->
+        <div class="col-lg-8 mb-4">
+            @if (Model.GradingResult != null)
+            {
+                <!-- Score Card -->
+                <div class="card glass-panel shadow-sm border-0 mb-4 bg-gradient">
+                    <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                        <div>
+                            <h4 class="mb-1 text-primary">Grading Complete!</h4>
+                            @if (!string.IsNullOrEmpty(Model.StudentName))
+                            {
+                                <p class="mb-1"><strong><i class="bi bi-person-fill me-1"></i>@Model.StudentName</strong></p>
+                            }
+                            <p class="text-muted mb-0">Answers compared with the database answer keys. <span class="badge bg-success-subtle text-success">Saved to DB</span></p>
+                        </div>
+                        <div class="text-end">
+                            <div class="d-inline-block bg-primary text-white rounded px-4 py-3 text-center">
+                                <span class="fs-1 fw-bold">@Model.GradingResult.CorrectCount</span>
+                                <span class="fs-5">/ @Model.GradingResult.TotalQuestions</span>
+                                <div class="small">(@Model.GradingResult.ScorePercentage.ToString("0.0")%)</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- Checked Answers Table -->
+                <div class="card glass-panel shadow-sm border-0">
+                    <div class="card-body p-4">
+                        <h5 class="card-title mb-3"><i class="bi bi-list-check text-success me-2"></i> Results Breakdown</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 80px;">Q#</th>
+                                        <th>Question / Options</th>
+                                        <th class="text-center" style="width: 120px;">Correct Answer</th>
+                                        <th class="text-center" style="width: 120px;">Student Answer</th>
+                                        <th class="text-center" style="width: 100px;">Result</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var res in Model.GradingResult.Results)
+                                    {
+                                        var matchedQuestion = Model.Exam?.Questions.FirstOrDefault(q => q.Number == res.QuestionNumber);
+                                        <tr>
+                                            <td><strong>Q @res.QuestionNumber</strong></td>
+                                            <td>
+                                                <div>@matchedQuestion?.QuestionText</div>
+                                                <div class="small text-muted mt-1">
+                                                    <strong>A:</strong> @matchedQuestion?.OptionA | 
+                                                    <strong>B:</strong> @matchedQuestion?.OptionB | 
+                                                    <strong>C:</strong> @matchedQuestion?.OptionC | 
+                                                    <strong>D:</strong> @matchedQuestion?.OptionD
+                                                </div>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-success fs-6">@res.CorrectAnswer</span>
+                                            </td>
+                                            <td class="text-center">
+                                                @if (string.IsNullOrEmpty(res.ScannedAnswer))
+                                                {
+                                                    <span class="badge bg-secondary fs-6" title="Could not recognize or find answer">N/A</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge @(res.IsCorrect ? "bg-success" : "bg-danger") fs-6">@res.ScannedAnswer</span>
+                                                }
+                                            </td>
+                                            <td class="text-center">
+                                                @if (res.IsCorrect)
+                                                {
+                                                    <span class="text-success fs-4"><i class="bi bi-check-circle-fill"></i></span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-danger fs-4"><i class="bi bi-x-circle-fill"></i></span>
+                                                }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="card glass-panel shadow-sm border-0 py-5 text-center text-muted">
+                    <div class="card-body">
+                        <i class="bi bi-robot fs-1 text-primary"></i>
+                        <h4 class="mt-3">Ready to Grade</h4>
+                        <p class="mb-0">Please upload the student's sheet on the left to start OCR grading.</p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

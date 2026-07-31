@@ -7,8 +7,11 @@ namespace OCR_Frontend.Pages
     {
         public IActionResult OnGet()
         {
-            // Remove the authentication cookie
+            // Remove all session cookies
             Response.Cookies.Delete("AuthToken");
+            Response.Cookies.Delete("DisplayName");
+            Response.Cookies.Delete("DisplayEmail");
+            Response.Cookies.Delete("UserRole");
             // Redirect to the login page after logout
             return RedirectToPage("/Login");
         }

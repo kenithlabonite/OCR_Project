@@ -16,7 +16,8 @@ namespace Project_OLMS.Controllers
     [Route("api/[controller]")]
     public class ExamController(
         AppDbContext context,
-        IGeminiService geminiService) : ControllerBase
+        IGeminiService geminiService,
+        IAuditLogService auditLogService) : ControllerBase
     {
         private static readonly JsonSerializerOptions _jsonOptions = new()
         {
@@ -71,6 +72,12 @@ namespace Project_OLMS.Controllers
 
             context.ExamQuestionnaires.Add(exam);
             await context.SaveChangesAsync();
+
+            await auditLogService.LogDocumentExamAsync(
+                action: "Exam Generated",
+                details: $"Generated {questions.Count}-question exam (Exam ID: {exam.Id}) from document '{document.FileName}' (ID: {documentId})",
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+            );
 
             // ── Return response ───────────────────────────────────────────
             return Ok(MapToGenerateResponse(exam, document.FileName, questions));
@@ -223,7 +230,8 @@ namespace Project_OLMS.Controllers
             });
 
             byte[] pdfBytes = pdfDocument.GeneratePdf();
-            return File(pdfBytes, "application/pdf", $"Questionnaire_{examId}.pdf");
+            string cleanName = Path.GetFileNameWithoutExtension(documentName);
+            return File(pdfBytes, "application/pdf", $"{cleanName}_Questionnaire_Full.pdf");
         }
 
         // New endpoint: Download questionnaire without answer keys (questions only)
@@ -323,7 +331,15 @@ namespace Project_OLMS.Controllers
             });
 
             byte[] pdfBytes = pdfDocument.GeneratePdf();
-            return File(pdfBytes, "application/pdf", $"Questionnaire_Questions_{examId}.pdf");
+            string cleanName = Path.GetFileNameWithoutExtension(documentName);
+
+            await auditLogService.LogDocumentExamAsync(
+                action: "Questionnaire Downloaded",
+                details: $"Downloaded questionnaire PDF for '{documentName}' (Exam ID: {examId})",
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+            );
+
+            return File(pdfBytes, "application/pdf", $"{cleanName}_Questionnaire.pdf");
         }
 
         // New endpoint: Download answer key PDF (answers only)
@@ -406,7 +422,15 @@ namespace Project_OLMS.Controllers
             });
 
             byte[] pdfBytes = pdfDocument.GeneratePdf();
-            return File(pdfBytes, "application/pdf", $"AnswerKey_{examId}.pdf");
+            string cleanName = Path.GetFileNameWithoutExtension(documentName);
+
+            await auditLogService.LogDocumentExamAsync(
+                action: "Answer Key Downloaded",
+                details: $"Downloaded answer key PDF for '{documentName}' (Exam ID: {examId})",
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+            );
+
+            return File(pdfBytes, "application/pdf", $"{cleanName}_AnswerKey.pdf");
         }
 
         // ── Get By Document Id ────────────────────────────────────────────────

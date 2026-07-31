@@ -29,7 +29,6 @@
                             <th>Description</th>
                             <th>Size</th>
                             <th>Date Uploaded</th>
-                            <th>AI Summary</th>
                             <th class="text-end">Actions</th>
                         </tr>
                     </thead>
@@ -44,18 +43,6 @@
                                 <td><small class="text-muted">@(string.IsNullOrEmpty(doc.Description) ? "-" : doc.Description)</small></td>
                                 <td><small>@((doc.FileSizeBytes / 1024.0 / 1024.0).ToString("0.00")) MB</small></td>
                                 <td><small>@doc.UploadedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</small></td>
-                                <td>
-                                    @if (!string.IsNullOrEmpty(doc.AiSummary))
-                                    {
-                                        <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="popover" title="AI Summary" data-bs-content="@doc.AiSummary">
-                                            <i class="bi bi-magic"></i> View
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <span class="text-muted"><small>No summary</small></span>
-                                    }
-                                </td>
                                 <td class="text-end">
                                      <div class="d-flex justify-content-end gap-2">
                                          <a href="/GenerateQuestionnaire?documentId=@doc.Id" class="btn btn-sm btn-outline-success" title="Generate Exam">

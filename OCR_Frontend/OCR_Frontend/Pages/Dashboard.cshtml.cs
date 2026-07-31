@@ -20,10 +20,17 @@ namespace OCR_Frontend.Pages
         public int FailedJobs { get; set; }
         public int CreditsUsed { get; set; }
 
+        // Session display
+        public string DisplayName { get; set; } = string.Empty;
+        public string DisplayEmail { get; set; } = string.Empty;
+
         public async Task OnGetAsync()
         {
+            // Read display info from cookies set at login
+            DisplayName  = Request.Cookies["DisplayName"]  ?? string.Empty;
+            DisplayEmail = Request.Cookies["DisplayEmail"] ?? string.Empty;
+
             var client = _httpClientFactory.CreateClient("BackendClient");
-            // Retrieve token from cookie
             var token = Request.Cookies["AuthToken"];
             if (!string.IsNullOrEmpty(token))
             {
@@ -36,9 +43,9 @@ namespace OCR_Frontend.Pages
                 if (stats != null)
                 {
                     TotalProcessed = stats.TotalProcessed;
-                    SuccessRate = stats.SuccessRate;
-                    FailedJobs = stats.FailedJobs;
-                    CreditsUsed = stats.CreditsUsed;
+                    SuccessRate    = stats.SuccessRate;
+                    FailedJobs     = stats.FailedJobs;
+                    CreditsUsed    = stats.CreditsUsed;
                 }
             }
         }

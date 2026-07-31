@@ -10,7 +10,7 @@ namespace Project_OLMS.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController(AppDbContext context, IEmailService emailService) : ControllerBase
+    public class AuthController(AppDbContext context, IEmailService emailService, IAuditLogService auditLogService) : ControllerBase
     {
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] MyDTOs.DTO.RegisterRequest request)
@@ -42,6 +42,14 @@ namespace Project_OLMS.Controllers
 
             context.Users.Add(newUser);
             await context.SaveChangesAsync();
+
+            await auditLogService.LogUserActivityAsync(
+                action: "User Registered",
+                details: $"New account registered for '{request.Username}' ({request.Email}) with ID {generatedId}",
+                userId: generatedId,
+                username: request.Username,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+            );
 
             // Send email logic...
             string emailSubject = "Your Account Verification Code - Project OLMS";
@@ -128,6 +136,14 @@ namespace Project_OLMS.Controllers
             context.Users.Update(user);
             await context.SaveChangesAsync();
 
+            await auditLogService.LogUserActivityAsync(
+                action: "Email Verified",
+                details: $"Email address verified for user '{user.Username}' ({user.Email})",
+                userId: user.Id,
+                username: user.Username,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+            );
+
             return Ok(new { message = "Email verified successfully! Your account is activated and you can now log in." });
         }
 
@@ -140,12 +156,29 @@ namespace Project_OLMS.Controllers
             // BC.Verify reads the embedded salt from 'user.Password' and safely validates 'request.Password'
             if (user == null || !BC.Verify(request.Password, user.Password))
             {
+                await auditLogService.LogUserActivityAsync(
+                    action: "Failed Login",
+                    details: $"Failed login attempt for email '{request.Email}'",
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+                );
                 return Unauthorized("Invalid email or password.");
             }
 
             if (!user.IsEmailVerified)
             {
                 return Unauthorized("Please verify your account using your 4-digit OTP code before logging in.");
+            }
+
+            if (!user.IsActive)
+            {
+                await auditLogService.LogUserActivityAsync(
+                    action: "Blocked Deactivated Login",
+                    details: $"Deactivated user '{user.Username}' ({user.Email}) attempted to log in.",
+                    userId: user.Id,
+                    username: user.Username,
+                    ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+                );
+                return Unauthorized("Your account has been deactivated. Please contact an administrator.");
             }
 
             string jwtToken = GenerateJwtToken(user);
@@ -157,11 +190,21 @@ namespace Project_OLMS.Controllers
             context.Users.Update(user);
             await context.SaveChangesAsync();
 
+            await auditLogService.LogUserActivityAsync(
+                action: "User Login",
+                details: $"User '{user.Username}' ({user.Email}) logged in successfully.",
+                userId: user.Id,
+                username: user.Username,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+            );
+
             return Ok(new
             {
-                id = user.Id,
-                email = user.Email,
-                token = jwtToken,
+                id           = user.Id,
+                username     = user.Username,
+                email        = user.Email,
+                role         = user.Role,
+                token        = jwtToken,
                 refreshToken = newRefreshToken
             });
         }

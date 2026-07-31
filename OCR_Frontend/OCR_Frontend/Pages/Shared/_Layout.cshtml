@@ -24,6 +24,7 @@
                     <ul class="navbar-nav flex-grow-1">
                         @{
                             var isLoggedIn = Context.Request.Cookies.ContainsKey("AuthToken");
+                            var userRole = Context.Request.Cookies["UserRole"];
                         }
                         @if (isLoggedIn)
                         {
@@ -40,8 +41,17 @@
                                 <a class="nav-link text-dark" asp-area="" asp-page="/Questionnaires">Questionnaires</a>
                             </li>
                             <li class="nav-item">
+                                <a class="nav-link text-dark" asp-area="" asp-page="/GradedSheets">Graded Sheets</a>
+                            </li>
+                            <li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-page="/Documents">Documents</a>
                             </li>
+                            @if (userRole == "Admin")
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark" asp-area="" asp-page="/Admin"><i class="bi bi-shield-lock me-1"></i>Admin</a>
+                                </li>
+                            }
                         }
                     </ul>
                     <ul class="navbar-nav">
@@ -53,12 +63,12 @@
                         }
                         else
                         {
-                            <li class="nav-item">
+                            /*<li class="nav-item">
                                 <a class="nav-link text-dark" asp-area="" asp-page="/Login">Login</a>
                             </li>
                             <li class="nav-item ms-2">
                                 <a class="btn btn-primary btn-sm px-4 py-2 mt-1" asp-area="" asp-page="/Register">Get Started</a>
-                            </li>
+                            </li>*/
                         }
                     </ul>
                 </div>
@@ -70,11 +80,11 @@
         @RenderBody()
     </main>
 
-    <footer class="footer text-muted text-center mt-5">
+    <!-- <footer class="footer text-muted text-center mt-5">
         <div class="container pb-3">
 
         </div>
-    </footer>
+    </footer> -->
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
