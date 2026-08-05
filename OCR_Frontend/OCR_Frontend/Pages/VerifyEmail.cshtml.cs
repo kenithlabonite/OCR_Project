@@ -48,8 +48,8 @@ namespace OCR_Frontend.Pages
             var response = await client.PostAsJsonAsync("/api/auth/verify-otp", verifyDto);
             if (!response.IsSuccessStatusCode)
             {
-                var errorText = await response.Content.ReadAsStringAsync();
-                ModelState.AddModelError(string.Empty, string.IsNullOrWhiteSpace(errorText) ? "Verification failed." : errorText);
+                var errorText = await OCR_Frontend.Helpers.ApiErrorHelper.ExtractErrorMessageAsync(response, "Verification failed.");
+                ModelState.AddModelError(string.Empty, errorText);
                 return Page();
             }
 

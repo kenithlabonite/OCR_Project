@@ -1,0 +1,302 @@
+@page
+@model OCR_Frontend.Pages.ProfileModel
+@{
+    ViewData["Title"] = "Account Profile";
+    var showEditFormInitially = !string.IsNullOrEmpty(Model.SuccessMessage) || !string.IsNullOrEmpty(Model.ErrorMessage);
+}
+
+<div class="container-fluid py-2">
+    <!-- Top Alert Messages -->
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2 fs-5"></i>@Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>@Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- Profile Header Card -->
+    <div class="glass-panel p-4 mb-4">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="stat-icon icon-blue rounded-circle p-3" style="width: 64px; height: 64px;">
+                    <i class="bi bi-person-fill fs-2"></i>
+                </div>
+                <div>
+                    <h3 class="mb-1">
+                        @(string.IsNullOrWhiteSpace(Model.Input.FirstName) && string.IsNullOrWhiteSpace(Model.Input.LastName) 
+                            ? Model.Input.Username 
+                            : $"{Model.Input.FirstName} {Model.Input.LastName}")
+                    </h3>
+                    <div class="d-flex align-items-center gap-2 text-muted small">
+                        <span><i class="bi bi-envelope me-1"></i>@Model.Input.Email</span>
+                        <span>•</span>
+                        <span><i class="bi bi-card-heading me-1"></i>ID: @(Model.UserId ?? "N/A")</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill">
+                    <i class="bi bi-shield-check me-1"></i>@(Model.UserRole ?? "User")
+                </span>
+                <span class="badge @(Model.Input.Status == "Active" ? "bg-success" : "bg-warning text-dark") px-3 py-2 fs-6 rounded-pill">
+                    <i class="bi bi-circle-fill me-1" style="font-size: 0.6rem;"></i>@(Model.Input.Status ?? "Active")
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Credentials Overview Section -->
+    <div class="glass-panel p-4 mb-4">
+        <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-card-checklist text-primary fs-4"></i>
+                <h5 class="mb-0 fw-bold">Current Credentials Overview</h5>
+            </div>
+            @if (showEditFormInitially)
+            {
+                <button type="button" class="btn btn-outline-danger btn-sm px-3 py-2" id="startEditProfileBtn">
+                    <i class="bi bi-x-circle me-1"></i> Cancel Editing
+                </button>
+            }
+            else
+            {
+                <button type="button" class="btn btn-primary btn-sm px-3 py-2" id="startEditProfileBtn">
+                    <i class="bi bi-pencil-square me-1"></i> Edit Credentials
+                </button>
+            }
+        </div>
+
+        <div class="row g-3">
+            <!-- Full Name -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="p-3 bg-white bg-opacity-75 rounded border shadow-sm h-100">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">First & Last Name</div>
+                    <div class="fw-bold text-dark mt-1">
+                        @(string.IsNullOrWhiteSpace(Model.CurrentProfile?.FirstName) && string.IsNullOrWhiteSpace(Model.CurrentProfile?.LastName) 
+                            ? "Not Set" 
+                            : $"{Model.CurrentProfile?.FirstName} {Model.CurrentProfile?.LastName}")
+                    </div>
+                </div>
+            </div>
+
+            <!-- Username -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="p-3 bg-white bg-opacity-75 rounded border shadow-sm h-100">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">Username</div>
+                    <div class="fw-bold text-dark mt-1">@@@(Model.CurrentProfile?.Username ?? Model.Input.Username)</div>
+                </div>
+            </div>
+
+            <!-- Gmail / Email -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="p-3 bg-white bg-opacity-75 rounded border shadow-sm h-100">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">Gmail / Email</div>
+                    <div class="fw-bold text-dark mt-1 text-truncate">@(Model.CurrentProfile?.Email ?? Model.Input.Email)</div>
+                </div>
+            </div>
+
+            <!-- Contact Number -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="p-3 bg-white bg-opacity-75 rounded border shadow-sm h-100">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">Contact Number</div>
+                    <div class="fw-bold text-dark mt-1">
+                        @(string.IsNullOrWhiteSpace(Model.CurrentProfile?.ContactNumber) ? "Not Provided" : Model.CurrentProfile?.ContactNumber)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Status -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="p-3 bg-white bg-opacity-75 rounded border shadow-sm h-100">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">Status</div>
+                    <div class="mt-1">
+                        <span class="badge @(Model.CurrentProfile?.Status == "Active" ? "bg-success" : "bg-warning text-dark") px-2.5 py-1">
+                            <i class="bi bi-circle-fill me-1" style="font-size: 0.55rem;"></i>@(Model.CurrentProfile?.Status ?? "Active")
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account Role -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="p-3 bg-white bg-opacity-75 rounded border shadow-sm h-100">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">Role</div>
+                    <div class="mt-1">
+                        <span class="badge bg-primary px-2.5 py-1">
+                            <i class="bi bi-shield-check me-1"></i>@(Model.UserRole ?? "User")
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Account ID -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="p-3 bg-white bg-opacity-75 rounded border shadow-sm h-100">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">Account ID</div>
+                    <div class="fw-bold text-dark mt-1">@(Model.UserId ?? "N/A")</div>
+                </div>
+            </div>
+
+            <!-- Physical Address -->
+            <div class="col-lg-3 col-md-4 col-sm-6">
+                <div class="p-3 bg-white bg-opacity-75 rounded border shadow-sm h-100">
+                    <div class="text-muted small fw-semibold text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.05em;">Physical Address</div>
+                    <div class="fw-bold text-dark mt-1 text-truncate">
+                        @(string.IsNullOrWhiteSpace(Model.CurrentProfile?.Address) ? "Not Provided" : Model.CurrentProfile?.Address)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Credentials Edit Form -->
+    <div class="glass-panel p-4" id="editProfileFormContainer" style="display: @(showEditFormInitially ? "block" : "none");">
+        <div class="d-flex align-items-center gap-2 border-bottom pb-3 mb-4">
+            <i class="bi bi-person-gear text-primary fs-4"></i>
+            <h5 class="mb-0 fw-bold">Edit Credentials & Personal Information</h5>
+        </div>
+
+        <form method="post">
+            <div class="row g-3 mb-3">
+                <!-- First Name -->
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="Input.FirstName">First Name</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                        <input asp-for="Input.FirstName" type="text" class="form-control border-start-0 ps-0" placeholder="John" />
+                    </div>
+                </div>
+
+                <!-- Last Name -->
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="Input.LastName">Last Name</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-person"></i></span>
+                        <input asp-for="Input.LastName" type="text" class="form-control border-start-0 ps-0" placeholder="Doe" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <!-- Username -->
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="Input.Username">Username</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-at"></i></span>
+                        <input asp-for="Input.Username" type="text" class="form-control border-start-0 ps-0" required placeholder="johndoe" />
+                    </div>
+                </div>
+
+                <!-- Gmail / Email -->
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="Input.Email">Gmail / Email Address</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
+                        <input asp-for="Input.Email" type="email" class="form-control border-start-0 ps-0" required placeholder="name@gmail.com" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-3">
+                <!-- Contact Number -->
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="Input.ContactNumber">Contact Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-telephone"></i></span>
+                        <input asp-for="Input.ContactNumber" type="tel" class="form-control border-start-0 ps-0" placeholder="+1 (555) 000-0000" />
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div class="col-md-6">
+                    <label class="form-label" asp-for="Input.Status">Account Status</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-activity"></i></span>
+                        <select asp-for="Input.Status" class="form-select border-start-0 ps-0">
+                            <option value="Active">Active</option>
+                            <option value="Busy">Busy</option>
+                            <option value="Away">Away</option>
+                            <option value="On Leave">On Leave</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Password (Optional) -->
+            <!-- <div class="mb-3">
+                <label class="form-label" asp-for="Input.NewPassword">New Password <span class="text-muted fw-normal">(Leave blank to keep current password)</span></label>
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-lock"></i></span>
+                    <input asp-for="Input.NewPassword" type="password" id="newPasswordInput" class="form-control border-start-0 border-end-0 ps-0" placeholder="••••••••" />
+                    <button class="btn btn-outline-secondary border-start-0" type="button" id="togglePasswordBtn">
+                        <i class="bi bi-eye" id="togglePasswordIcon"></i>
+                    </button>
+                </div>
+            </div> -->
+
+            <div class="mb-4">
+                <!-- Address -->
+                <label class="form-label" asp-for="Input.Address">Physical Address</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-geo-alt"></i></span>
+                    <textarea asp-for="Input.Address" class="form-control border-start-0 ps-0" rows="2" placeholder="123 Main Street, City, Country"></textarea>
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+                <a href="/Dashboard" class="btn btn-light border px-4">Cancel</a>
+                <button type="submit" class="btn btn-primary px-4">
+                    <i class="bi bi-check2-circle me-1"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const toggleBtn = document.getElementById('togglePasswordBtn');
+            const passInput = document.getElementById('newPasswordInput');
+            const passIcon = document.getElementById('togglePasswordIcon');
+
+            if (toggleBtn && passInput && passIcon) {
+                toggleBtn.addEventListener('click', function () {
+                    const type = passInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                    passInput.setAttribute('type', type);
+                    passIcon.className = type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+                });
+            }
+
+            // Edit Credentials form toggle logic
+            const editBtn = document.getElementById('startEditProfileBtn');
+            const formContainer = document.getElementById('editProfileFormContainer');
+
+            if (editBtn && formContainer) {
+                editBtn.addEventListener('click', function () {
+                    if (formContainer.style.display === 'none') {
+                        formContainer.style.display = 'block';
+                        editBtn.innerHTML = '<i class="bi bi-x-circle me-1"></i> Cancel Editing';
+                        editBtn.classList.replace('btn-primary', 'btn-outline-danger');
+                        formContainer.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        formContainer.style.display = 'none';
+                        editBtn.innerHTML = '<i class="bi bi-pencil-square me-1"></i> Edit Credentials';
+                        editBtn.classList.replace('btn-outline-danger', 'btn-primary');
+                    }
+                });
+            }
+        });
+    </script>
+}

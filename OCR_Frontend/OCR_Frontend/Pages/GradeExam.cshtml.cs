@@ -100,8 +100,7 @@ namespace OCR_Frontend.Pages
                 }
                 else
                 {
-                    var errorText = await response.Content.ReadAsStringAsync();
-                    ErrorMessage = string.IsNullOrWhiteSpace(errorText) ? "Failed to grade the answer sheet. Please ensure the image has clear text." : errorText;
+                    ErrorMessage = await OCR_Frontend.Helpers.ApiErrorHelper.ExtractErrorMessageAsync(response, "Failed to grade the answer sheet. Please ensure the image has clear text.");
                 }
             }
             finally

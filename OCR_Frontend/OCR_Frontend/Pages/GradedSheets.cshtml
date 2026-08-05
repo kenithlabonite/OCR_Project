@@ -126,7 +126,7 @@
                             <tr>
                                 <th># ID</th>
                                 <th>Student Name</th>
-                                <th>Source Document / Exam</th>
+                                <th>Title / Topic</th>
                                 <th class="text-center">Score</th>
                                 <th class="text-center">Percentage</th>
                                 <th>Graded Date</th>
@@ -155,12 +155,12 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <i class="bi bi-file-earmark-pdf text-danger fs-5"></i>
-                                            <span class="fw-medium text-dark">@sheet.DocumentFileName</span>
-                                        </div>
-                                    </td>
+                                     <td>
+                                         <div class="d-flex align-items-center gap-2">
+                                             <i class="bi bi-journal-bookmark-fill text-primary fs-5"></i>
+                                             <span class="fw-medium text-dark">@sheet.DocumentFileName</span>
+                                         </div>
+                                     </td>
                                     <td class="text-center fw-bold fs-6">
                                         @sheet.CorrectCount / @sheet.TotalQuestions
                                     </td>
@@ -222,7 +222,7 @@
                                     <div class="col-md-6">
                                         <p class="mb-1 text-muted small">Student Name</p>
                                         <h5 class="fw-bold mb-0 text-dark">@(string.IsNullOrWhiteSpace(sheet.StudentName) ? "Anonymous Student" : sheet.StudentName)</h5>
-                                        <small class="text-muted"><i class="bi bi-file-earmark-pdf me-1"></i>@sheet.DocumentFileName</small>
+                                        <small class="text-muted"><i class="bi bi-journal-bookmark me-1"></i>@sheet.DocumentFileName</small>
                                     </div>
                                     <div class="col-md-6 text-md-end mt-2 mt-md-0">
                                         <span class="display-6 fw-bold text-primary">@sheet.CorrectCount / @sheet.TotalQuestions</span>

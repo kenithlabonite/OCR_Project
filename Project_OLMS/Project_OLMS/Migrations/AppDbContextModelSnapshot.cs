@@ -68,8 +68,17 @@ namespace Project_OLMS.Migrations
                         .HasMaxLength(10)
                         .HasColumnType("varchar(10)");
 
+                    b.Property<string>("Address")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ContactNumber")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("Email")
                         .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("FirstName")
                         .HasColumnType("longtext");
 
                     b.Property<bool>("IsActive")
@@ -77,6 +86,9 @@ namespace Project_OLMS.Migrations
 
                     b.Property<bool>("IsEmailVerified")
                         .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("LastName")
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Password")
                         .IsRequired()
@@ -94,6 +106,10 @@ namespace Project_OLMS.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.Property<string>("Token")
                         .HasColumnType("longtext");
@@ -121,6 +137,10 @@ namespace Project_OLMS.Migrations
                     b.Property<string>("AiSummary")
                         .HasMaxLength(4000)
                         .HasColumnType("varchar(4000)");
+
+                    b.Property<string>("BatchTitle")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("ContentType")
                         .IsRequired()
@@ -205,7 +225,6 @@ namespace Project_OLMS.Migrations
                         .HasColumnType("datetime(6)");
 
                     b.Property<string>("ImagePathsJson")
-                        .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<string>("RawOcrText")

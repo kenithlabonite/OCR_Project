@@ -21,6 +21,15 @@
                 </div>
             }
 
+            @if (Request.Query["reason"] == "afk_timeout")
+            {
+                <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm" role="alert">
+                    <i class="bi bi-clock-history me-2 text-warning fs-5"></i>
+                    <strong>Session Expired:</strong> You were automatically logged out due to 3 minutes of inactivity (AFK). Please sign in again.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
             <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
             <form method="post">

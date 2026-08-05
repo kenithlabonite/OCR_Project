@@ -2,6 +2,11 @@
 @model OCR_Frontend.Pages.DocumentsModel
 @{
     ViewData["Title"] = "My Documents";
+    // Group documents by BatchTitle (or FileName if no title set)
+    var groups = Model.Documents
+        .GroupBy(d => !string.IsNullOrWhiteSpace(d.BatchTitle) ? d.BatchTitle : d.FileName)
+        .OrderByDescending(g => g.Max(d => d.UploadedAt))
+        .ToList();
 }
 
 <div class="container mt-5">
@@ -19,54 +24,86 @@
     }
 
     <div class="glass-panel p-4">
-        @if (Model.Documents.Any())
+        @if (groups.Any())
         {
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
-                        <tr>
-                            <th>File Name</th>
-                            <th>Description</th>
-                            <th>Size</th>
-                            <th>Date Uploaded</th>
-                            <th class="text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var doc in Model.Documents)
-                        {
-                            <tr>
-                                <td>
-                                    <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
-                                    <strong>@doc.FileName</strong>
-                                </td>
-                                <td><small class="text-muted">@(string.IsNullOrEmpty(doc.Description) ? "-" : doc.Description)</small></td>
-                                <td><small>@((doc.FileSizeBytes / 1024.0 / 1024.0).ToString("0.00")) MB</small></td>
-                                <td><small>@doc.UploadedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</small></td>
-                                <td class="text-end">
-                                     <div class="d-flex justify-content-end gap-2">
-                                         <a href="/GenerateQuestionnaire?documentId=@doc.Id" class="btn btn-sm btn-outline-success" title="Generate Exam">
-                                             <i class="bi bi-cpu"></i>
-                                         </a>
-                                         <form method="post" asp-page-handler="Download">
-                                             <input type="hidden" name="id" value="@doc.Id" />
-                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Download">
-                                                <i class="bi bi-download"></i>
-                                            </button>
-                                        </form>
-                                        <form method="post" asp-page-handler="Delete" onsubmit="return confirm('Are you sure you want to delete this document?');">
-                                            <input type="hidden" name="id" value="@doc.Id" />
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+            @foreach (var group in groups)
+            {
+                var groupId = "grp-" + group.Key.GetHashCode();
+                var firstDoc = group.First();
+                <div class="card border-0 shadow-sm mb-3">
+                    <!-- Title Header Row -->
+                    <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-3 px-4"
+                         style="cursor:pointer;" data-bs-toggle="collapse" data-bs-target="#@groupId" aria-expanded="true">
+                        <div class="d-flex align-items-center gap-3">
+                            <i class="bi bi-collection-fill text-primary fs-5"></i>
+                            <div>
+                                <strong class="fs-6">@group.Key</strong>
+                                <div class="text-muted small">
+                                    @group.Count() @(group.Count() == 1 ? "lesson" : "lessons") &bull;
+                                    Uploaded @group.Max(d => d.UploadedAt).ToLocalTime().ToString("MMM dd, yyyy")
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            <!-- Generate Exam from this batch title -->
+                            <a href="/GenerateQuestionnaire" class="btn btn-sm btn-outline-success" title="Generate Exam from this topic"
+                               onclick="event.stopPropagation();">
+                                <i class="bi bi-cpu me-1"></i> Generate Exam
+                            </a>
+                            <i class="bi bi-chevron-down text-muted"></i>
+                        </div>
+                    </div>
+
+                    <!-- Collapsible file list -->
+                    <div id="@groupId" class="collapse show">
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="ps-4">File Name</th>
+                                            <th>Description</th>
+                                            <th>Size</th>
+                                            <th>Date Uploaded</th>
+                                            <th class="text-end pe-4">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var doc in group)
+                                        {
+                                            <tr>
+                                                <td class="ps-4">
+                                                    <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
+                                                    <span>@doc.FileName</span>
+                                                </td>
+                                                <td><small class="text-muted">@(string.IsNullOrEmpty(doc.Description) ? "-" : doc.Description)</small></td>
+                                                <td><small>@((doc.FileSizeBytes / 1024.0 / 1024.0).ToString("0.00")) MB</small></td>
+                                                <td><small>@doc.UploadedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</small></td>
+                                                <td class="text-end pe-4">
+                                                    <div class="d-flex justify-content-end gap-2">
+                                                        <form method="post" asp-page-handler="Download">
+                                                            <input type="hidden" name="id" value="@doc.Id" />
+                                                            <button type="submit" class="btn btn-sm btn-outline-primary" title="Download">
+                                                                <i class="bi bi-download"></i>
+                                                            </button>
+                                                        </form>
+                                                        <form method="post" asp-page-handler="Delete" onsubmit="return confirm('Are you sure you want to delete this document?');">
+                                                            <input type="hidden" name="id" value="@doc.Id" />
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
         }
         else
         {
@@ -81,12 +118,21 @@
 
 @section Scripts {
     <script>
-        // Initialize bootstrap popovers for the AI summaries
-        document.addEventListener("DOMContentLoaded", function(){
-            var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
-            var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
-                return new bootstrap.Popover(popoverTriggerEl)
-            })
+        // Rotate chevron icon when a group is toggled
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll('[data-bs-toggle="collapse"]').forEach(function (header) {
+                var target = document.querySelector(header.getAttribute('data-bs-target'));
+                var icon = header.querySelector('.bi-chevron-down, .bi-chevron-up');
+
+                if (target && icon) {
+                    target.addEventListener('show.bs.collapse', function () {
+                        icon.classList.replace('bi-chevron-down', 'bi-chevron-up');
+                    });
+                    target.addEventListener('hide.bs.collapse', function () {
+                        icon.classList.replace('bi-chevron-up', 'bi-chevron-down');
+                    });
+                }
+            });
         });
     </script>
 }

@@ -10,11 +10,17 @@ namespace Project_OLMS.Models
         [StringLength(10)]
         public string Id { get; set; } = string.Empty;
 
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
         public string Username { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
 
         [MaxLength(100)]
         public string Password { get; set; } = string.Empty;
+
+        public string? ContactNumber { get; set; }
+        public string? Address { get; set; }
+        public string Status { get; set; } = "Active";
 
         public bool IsEmailVerified { get; set; } = false;
         public string? VerificationOtp { get; set; }

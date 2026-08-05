@@ -91,6 +91,7 @@ namespace OCR_Frontend.Pages
             public string FileName { get; set; } = string.Empty;
             public long FileSizeBytes { get; set; }
             public string? Description { get; set; }
+            public string? BatchTitle { get; set; }
             public string? AiSummary { get; set; }
             public DateTime UploadedAt { get; set; }
         }

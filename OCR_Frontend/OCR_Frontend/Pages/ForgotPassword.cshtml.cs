@@ -29,8 +29,8 @@ namespace OCR_Frontend.Pages
 
             if (!response.IsSuccessStatusCode)
             {
-                var error = await response.Content.ReadAsStringAsync();
-                ModelState.AddModelError(string.Empty, string.IsNullOrWhiteSpace(error) ? "Something went wrong." : error);
+                var error = await OCR_Frontend.Helpers.ApiErrorHelper.ExtractErrorMessageAsync(response, "Something went wrong.");
+                ModelState.AddModelError(string.Empty, error);
                 return Page();
             }
 

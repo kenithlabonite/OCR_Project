@@ -1,3 +1,23 @@
+@{
+    var isLoggedIn = Context.Request.Cookies.ContainsKey("AuthToken");
+    var userRole = Context.Request.Cookies["UserRole"];
+    var displayName = Context.Request.Cookies["DisplayName"];
+    var currentPath = Context.Request.Path.Value ?? "";
+    var isAuthPage = currentPath.Equals("/Login", StringComparison.OrdinalIgnoreCase)
+                  || currentPath.Equals("/Register", StringComparison.OrdinalIgnoreCase)
+                  || currentPath.Equals("/ForgotPassword", StringComparison.OrdinalIgnoreCase)
+                  || currentPath.Equals("/ResetPassword", StringComparison.OrdinalIgnoreCase)
+                  || currentPath.Equals("/VerifyEmail", StringComparison.OrdinalIgnoreCase)
+                  || currentPath.Equals("/", StringComparison.OrdinalIgnoreCase)
+                  || (ViewData["HideNavbar"] as bool? == true)
+                  || string.Equals(ViewData["Title"]?.ToString(), "Login", StringComparison.OrdinalIgnoreCase);
+    var hideNavbar = !isLoggedIn || isAuthPage;
+
+    string IsActive(string path)
+    {
+        return currentPath.Equals(path, StringComparison.OrdinalIgnoreCase) ? "active" : "";
+    }
+}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,86 +29,164 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/OCR_Frontend.styles.css" asp-append-version="true" />
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light sticky-top mb-4">
-            <div class="container">
-                <span class="navbar-brand d-flex align-items-center gap-2">
-                    <i class="bi bi-bezier2"></i> NexusOCR
-                </span>
-                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        @{
-                            var isLoggedIn = Context.Request.Cookies.ContainsKey("AuthToken");
-                            var userRole = Context.Request.Cookies["UserRole"];
-                        }
-                        @if (isLoggedIn)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-page="/Dashboard">Dashboard</a>
+<body data-is-logged-in="@(!hideNavbar ? "true" : "false")">
+
+    <div class="app-wrapper">
+        @if (!hideNavbar)
+        {
+            <!-- Sidebar Overlay for Mobile -->
+            <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+            <!-- Sidebar Navigation -->
+            <aside class="app-sidebar" id="appSidebar">
+                <div class="sidebar-header">
+                    <a href="/Dashboard" class="sidebar-brand">
+                        <i class="bi bi-bezier2"></i>
+                        <span>NexusOCR</span>
+                    </a>
+                    <button type="button" class="btn-close d-lg-none" id="sidebarCloseBtn" aria-label="Close"></button>
+                </div>
+
+                <div class="sidebar-content">
+                    <div>
+                        <div class="sidebar-nav-section-title">Navigation</div>
+                        <ul class="sidebar-nav">
+                            <li>
+                                <a class="sidebar-nav-link @IsActive("/Dashboard")" asp-area="" asp-page="/Dashboard">
+                                    <i class="bi bi-grid-1x2-fill"></i>
+                                    <span>Dashboard</span>
+                                </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-page="/UploadPdf">Upload PDF</a>
+                            <li>
+                                <a class="sidebar-nav-link @IsActive("/UploadPdf")" asp-area="" asp-page="/UploadPdf">
+                                    <i class="bi bi-cloud-upload-fill"></i>
+                                    <span>Upload PDF</span>
+                                </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-page="/GenerateQuestionnaire">Generate Exam</a>
+                            <li>
+                                <a class="sidebar-nav-link @IsActive("/GenerateQuestionnaire")" asp-area="" asp-page="/GenerateQuestionnaire">
+                                    <i class="bi bi-magic"></i>
+                                    <span>Generate Exam</span>
+                                </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-page="/Questionnaires">Questionnaires</a>
+                            <li>
+                                <a class="sidebar-nav-link @IsActive("/Questionnaires")" asp-area="" asp-page="/Questionnaires">
+                                    <i class="bi bi-journal-text"></i>
+                                    <span>Questionnaires</span>
+                                </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-page="/GradedSheets">Graded Sheets</a>
+                            <li>
+                                <a class="sidebar-nav-link @IsActive("/GradedSheets")" asp-area="" asp-page="/GradedSheets">
+                                    <i class="bi bi-patch-check-fill"></i>
+                                    <span>Graded Sheets</span>
+                                </a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-page="/Documents">Documents</a>
+                            <li>
+                                <a class="sidebar-nav-link @IsActive("/Documents")" asp-area="" asp-page="/Documents">
+                                    <i class="bi bi-folder2-open"></i>
+                                    <span>Documents</span>
+                                </a>
                             </li>
                             @if (userRole == "Admin")
                             {
-                                <li class="nav-item">
-                                    <a class="nav-link text-dark" asp-area="" asp-page="/Admin"><i class="bi bi-shield-lock me-1"></i>Admin</a>
+                                <li>
+                                    <a class="sidebar-nav-link @IsActive("/Admin")" asp-area="" asp-page="/Admin">
+                                        <i class="bi bi-shield-lock-fill"></i>
+                                        <span>Admin</span>
+                                    </a>
                                 </li>
                             }
-                        }
-                    </ul>
-                    <ul class="navbar-nav">
-                        @if (isLoggedIn)
-                        {
-                            <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-page="/Logout">Logout</a>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <div class="sidebar-nav-section-title">Account</div>
+                        <ul class="sidebar-nav">
+                            <li>
+                                <a class="sidebar-nav-link @IsActive("/Profile")" asp-area="" asp-page="/Profile">
+                                    <i class="bi bi-person-badge-fill"></i>
+                                    <span>Profile</span>
+                                </a>
                             </li>
-                        }
-                        else
-                        {
-                            /*<li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-page="/Login">Login</a>
+                            <li>
+                                <a class="sidebar-nav-link text-danger" asp-area="" asp-page="/Logout">
+                                    <i class="bi bi-box-arrow-right text-danger"></i>
+                                    <span>Logout</span>
+                                </a>
                             </li>
-                            <li class="nav-item ms-2">
-                                <a class="btn btn-primary btn-sm px-4 py-2 mt-1" asp-area="" asp-page="/Register">Get Started</a>
-                            </li>*/
-                        }
-                    </ul>
+                        </ul>
+                    </div>
                 </div>
-            </div>
-        </nav>
-    </header>
-    
-    <main role="main">
-        @RenderBody()
-    </main>
+            </aside>
+        }
 
-    <!-- <footer class="footer text-muted text-center mt-5">
-        <div class="container pb-3">
+        <!-- Main Content Area -->
+        <div class="app-main-layout @(hideNavbar ? "" : "has-sidebar")">
+            @if (!hideNavbar)
+            {
+                <!-- Top Header Bar -->
+                <header class="app-topbar d-flex align-items-center justify-content-between px-4 py-3">
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn btn-light border d-lg-none" id="sidebarToggleBtn" type="button" aria-label="Toggle sidebar">
+                            <i class="bi bi-list fs-5"></i>
+                        </button>
+                        <h1 class="h5 mb-0 fw-bold text-dark">@(ViewData["Title"] ?? "NexusOCR")</h1>
+                    </div>
 
+                    <div class="d-flex align-items-center gap-3">
+                        <div id="afkStatusBadge" class="d-flex align-items-center gap-1.5 bg-light px-3 py-1.5 rounded-pill border shadow-sm small text-muted" title="AFK Session Timeout (Automatically logs out after 3 minutes AFK)">
+                            <i class="bi bi-clock-history text-primary"></i>
+                            <span class="fw-medium">AFK:</span>
+                            <span id="afkHeaderTimer" class="fw-bold text-dark font-monospace">03:00</span>
+                        </div>
+                        @if (!string.IsNullOrEmpty(displayName))
+                        {
+                            <a href="/Profile" class="d-flex align-items-center gap-2 bg-white bg-opacity-75 px-3 py-1.5 rounded-pill border shadow-sm text-decoration-none text-dark">
+                                <i class="bi bi-person-circle text-primary fs-5"></i>
+                                <div class="lh-1">
+                                    <div class="fw-semibold text-dark small">@displayName</div>
+                                    @if (!string.IsNullOrEmpty(userRole))
+                                    {
+                                        <div class="text-muted text-uppercase" style="font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em;">@userRole</div>
+                                    }
+                                </div>
+                            </a>
+                        }
+                    </div>
+                </header>
+            }
+
+            <main role="main">
+                @RenderBody()
+            </main>
         </div>
-    </footer> -->
+    </div>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const toggleBtn = document.getElementById("sidebarToggleBtn");
+            const closeBtn = document.getElementById("sidebarCloseBtn");
+            const sidebar = document.getElementById("appSidebar");
+            const overlay = document.getElementById("sidebarOverlay");
+
+            function toggleSidebar() {
+                if (sidebar) sidebar.classList.toggle("show");
+                if (overlay) overlay.classList.toggle("show");
+            }
+
+            function closeSidebar() {
+                if (sidebar) sidebar.classList.remove("show");
+                if (overlay) overlay.classList.remove("show");
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener("click", toggleSidebar);
+            if (closeBtn) closeBtn.addEventListener("click", closeSidebar);
+            if (overlay) overlay.addEventListener("click", closeSidebar);
+        });
+    </script>
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

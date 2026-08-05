@@ -42,6 +42,12 @@ namespace Project_OLMS.Models
         public string? Description { get; set; }
 
         /// <summary>
+        /// Optional title used to group multiple documents into a batch/collection.
+        /// </summary>
+        [StringLength(255)]
+        public string? BatchTitle { get; set; }
+
+        /// <summary>
         /// AI-generated summary produced by Gemini after upload.
         /// Null when AI analysis was skipped or failed.
         /// </summary>

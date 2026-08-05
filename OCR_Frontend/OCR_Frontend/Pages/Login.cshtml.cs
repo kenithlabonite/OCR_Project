@@ -32,9 +32,8 @@ namespace OCR_Frontend.Pages
 
             if (!response.IsSuccessStatusCode)
             {
-                var errorText = await response.Content.ReadAsStringAsync();
-                ModelState.AddModelError(string.Empty,
-                    string.IsNullOrWhiteSpace(errorText) ? "Invalid login credentials." : errorText);
+                var errorText = await OCR_Frontend.Helpers.ApiErrorHelper.ExtractErrorMessageAsync(response, "Invalid login credentials.");
+                ModelState.AddModelError(string.Empty, errorText);
                 return Page();
             }
 
@@ -63,6 +62,8 @@ namespace OCR_Frontend.Pages
                 SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax,
                 Expires = DateTimeOffset.UtcNow.AddHours(1)
             };
+            if (!string.IsNullOrEmpty(result.Id))
+                Response.Cookies.Append("UserId", result.Id, displayCookieOptions);
             if (!string.IsNullOrEmpty(result.Username))
                 Response.Cookies.Append("DisplayName", result.Username, displayCookieOptions);
             if (!string.IsNullOrEmpty(result.Email))
@@ -75,6 +76,7 @@ namespace OCR_Frontend.Pages
 
         private class LoginResponse
         {
+            public string? Id { get; set; }
             public string? Token { get; set; }
             public string? Username { get; set; }
             public string? Email { get; set; }

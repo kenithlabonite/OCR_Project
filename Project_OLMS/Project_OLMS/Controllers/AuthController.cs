@@ -283,6 +283,98 @@ namespace Project_OLMS.Controllers
             return Ok(new { message = "Your password has been reset successfully. You can now log in." });
         }
 
+        // ==========================================
+        // PROFILE MANAGEMENT ENDPOINTS
+        // ==========================================
+
+        [HttpGet("profile/{id}")]
+        public async Task<IActionResult> GetProfile(string id)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == id || u.Email == id);
+            if (user == null)
+            {
+                return NotFound("User profile not found.");
+            }
+
+            var profile = new MyDTOs.DTO.UserProfileResponse
+            {
+                Id = user.Id,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Username = user.Username,
+                Email = user.Email,
+                ContactNumber = user.ContactNumber,
+                Address = user.Address,
+                Status = user.Status ?? "Active",
+                Role = user.Role,
+                IsActive = user.IsActive
+            };
+
+            return Ok(profile);
+        }
+
+        [HttpPut("profile/{id}")]
+        public async Task<IActionResult> UpdateProfile(string id, [FromBody] MyDTOs.DTO.UpdateProfileRequest request)
+        {
+            var user = await context.Users.FirstOrDefaultAsync(u => u.Id == id || u.Email == id);
+            if (user == null)
+            {
+                return NotFound("User profile not found.");
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Username))
+                user.Username = request.Username;
+
+            if (!string.IsNullOrWhiteSpace(request.Email) && request.Email != user.Email)
+            {
+                bool emailInUse = await context.Users.AnyAsync(u => u.Email == request.Email && u.Id != user.Id);
+                if (emailInUse)
+                    return BadRequest("Email address is already in use by another account.");
+                user.Email = request.Email;
+            }
+
+            user.FirstName = request.FirstName;
+            user.LastName = request.LastName;
+            user.ContactNumber = request.ContactNumber;
+            user.Address = request.Address;
+            if (!string.IsNullOrWhiteSpace(request.Status))
+                user.Status = request.Status;
+
+            if (!string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                user.Password = BC.HashPassword(request.NewPassword);
+            }
+
+            context.Users.Update(user);
+            await context.SaveChangesAsync();
+
+            await auditLogService.LogUserActivityAsync(
+                action: "Profile Updated",
+                details: $"User '{user.Username}' ({user.Email}) updated profile credentials.",
+                userId: user.Id,
+                username: user.Username,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+            );
+
+            return Ok(new
+            {
+                message = "Profile updated successfully!",
+                user = new MyDTOs.DTO.UserProfileResponse
+                {
+                    Id = user.Id,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName,
+                    Username = user.Username,
+                    Email = user.Email,
+                    ContactNumber = user.ContactNumber,
+                    Address = user.Address,
+                    Status = user.Status ?? "Active",
+                    Role = user.Role,
+                    IsActive = user.IsActive
+                }
+            });
+        }
+
         private static string GenerateRefreshToken()
         {
             var randomNumber = new byte[64];

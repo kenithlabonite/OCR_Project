@@ -11,7 +11,7 @@
                 <div class="text-center mb-4">
                     <i class="bi bi-cpu fs-1" style="color: var(--primary-color);"></i>
                     <h2 class="mt-3">Generate AI Questionnaire</h2>
-                    <p>Select an uploaded PDF topic to generate a 10-item multiple-choice exam.</p>
+                    <p>Select a <strong>topic/quarter title</strong> to generate a 10-item multiple-choice exam covering all its lessons.</p>
                 </div>
 
                 @if (!string.IsNullOrEmpty(Model.SuccessMessage))
@@ -32,30 +32,71 @@
 
                 <form method="post" id="generateForm">
                     <div class="mb-4">
-                        <label class="form-label" asp-for="SelectedDocumentId">Select Topic / PDF File</label>
-                        <select asp-for="SelectedDocumentId" class="form-select" required>
-                            <option value="">-- Select an uploaded PDF --</option>
-                            @foreach (var doc in Model.Documents)
-                            {
-                                <option value="@doc.Id">@doc.FileName @(string.IsNullOrEmpty(doc.Description) ? "" : $"({doc.Description})")</option>
-                            }
-                        </select>
-                        <small class="text-muted mt-1 d-block">
-                            Don't see your PDF? <a asp-page="/UploadPdf" class="text-decoration-none">Upload one now</a>.
-                        </small>
+                        <label class="form-label fw-semibold" asp-for="SelectedBatchTitle">
+                            <i class="bi bi-collection me-1"></i> Select Topic / Quarter Title
+                        </label>
+
+                        @if (Model.BatchTitles.Any())
+                        {
+                            <select asp-for="SelectedBatchTitle" class="form-select form-select-lg" required>
+                                <option value="">-- Choose a topic --</option>
+                                @foreach (var batch in Model.BatchTitles)
+                                {
+                                    <option value="@batch.Title">
+                                        @batch.Title
+                                        @if (batch.FileCount > 1)
+                                        {
+                                            <text> (@batch.FileCount lessons)</text>
+                                        }
+                                    </option>
+                                }
+                            </select>
+
+                            <!-- Preview of files in selected batch -->
+                            <div id="batchPreview" class="mt-3 d-none">
+                                <small class="text-muted fw-semibold d-block mb-1">
+                                    <i class="bi bi-files me-1"></i> Lessons included in this topic:
+                                </small>
+                                @foreach (var batch in Model.BatchTitles)
+                                {
+                                    <ul id="files-@batch.Title.GetHashCode()" class="batch-file-list list-unstyled mb-0 d-none ms-2">
+                                        @foreach (var fn in batch.FileNames)
+                                        {
+                                            <li class="text-muted small">
+                                                <i class="bi bi-file-earmark-pdf text-danger me-1"></i>@fn
+                                            </li>
+                                        }
+                                    </ul>
+                                }
+                            </div>
+
+                            <small class="text-muted mt-2 d-block">
+                                Don't see your topic? <a asp-page="/UploadPdf" class="text-decoration-none">Upload lessons now</a>.
+                            </small>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning mt-2">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                No uploaded PDFs found. <a asp-page="/UploadPdf" class="alert-link">Upload your lessons first</a>.
+                            </div>
+                        }
                     </div>
 
-                    <button type="submit" class="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2" id="btnSubmit">
-                        <i class="bi bi-magic"></i> 
-                        <span id="btnText">Generate Questionnaire</span>
-                    </button>
+                    @if (Model.BatchTitles.Any())
+                    {
+                        <button type="submit" class="btn btn-primary w-100 py-2 d-flex align-items-center justify-content-center gap-2" id="btnSubmit">
+                            <i class="bi bi-magic"></i> 
+                            <span id="btnText">Generate Questionnaire</span>
+                        </button>
+                    }
                 </form>
 
                 <div id="loadingIndicator" class="text-center mt-4 d-none">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Loading...</span>
                     </div>
-                    <p class="mt-2 text-muted">Analyzing PDF and generating questions with Gemini... This may take up to 30 seconds.</p>
+                    <p class="mt-2 text-muted">Analyzing all lessons and generating questions with Gemini... This may take up to 60 seconds.</p>
                 </div>
 
             </div>
@@ -65,17 +106,45 @@
 
 @section Scripts {
     <script>
-        document.getElementById('generateForm').addEventListener('submit', function (e) {
-            var btn = document.getElementById('btnSubmit');
-            var btnText = document.getElementById('btnText');
-            var loader = document.getElementById('loadingIndicator');
+        // Build a lookup from title -> file list element id
+        const batchMap = {
+            @foreach (var batch in Model.BatchTitles)
+            {
+                @:"@batch.Title.Replace("\"", "\\\"")": "files-@batch.Title.GetHashCode()",
+            }
+        };
 
-            // Disable button to prevent double submission
-            btn.disabled = true;
-            btnText.innerText = "Generating...";
-            
-            // Show loading animation
-            loader.classList.remove('d-none');
+        const selectEl   = document.getElementById('SelectedBatchTitle');
+        const previewDiv = document.getElementById('batchPreview');
+
+        function updatePreview() {
+            const val = selectEl ? selectEl.value : '';
+            // Hide all file lists
+            document.querySelectorAll('.batch-file-list').forEach(el => el.classList.add('d-none'));
+
+            if (val && batchMap[val]) {
+                previewDiv.classList.remove('d-none');
+                const listId = batchMap[val];
+                const listEl = document.getElementById(listId);
+                if (listEl) listEl.classList.remove('d-none');
+            } else {
+                previewDiv.classList.add('d-none');
+            }
+        }
+
+        if (selectEl) {
+            selectEl.addEventListener('change', updatePreview);
+            updatePreview();
+        }
+
+        document.getElementById('generateForm')?.addEventListener('submit', function (e) {
+            var btn     = document.getElementById('btnSubmit');
+            var btnText = document.getElementById('btnText');
+            var loader  = document.getElementById('loadingIndicator');
+
+            if (btn)     btn.disabled = true;
+            if (btnText) btnText.innerText = "Generating...";
+            if (loader)  loader.classList.remove('d-none');
         });
     </script>
 }

@@ -83,7 +83,76 @@ namespace Project_OLMS.Controllers
             return Ok(MapToGenerateResponse(exam, document.FileName, questions));
         }
 
+        // ── Generate by Batch Title ───────────────────────────────────────────
+
+        /// <summary>
+        /// POST api/exam/generate-by-title
+        /// Receives a batch title, finds all documents sharing that title,
+        /// reads their PDFs, and generates one 10-item exam covering all of them.
+        /// </summary>
+        [HttpPost("generate-by-title")]
+        public async Task<IActionResult> GenerateByTitle([FromBody] GenerateByTitleRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request?.BatchTitle))
+                return BadRequest(new { message = "BatchTitle is required." });
+
+            // Find all documents in this batch
+            var documents = await context.Documents
+                .AsNoTracking()
+                .Where(d => (d.BatchTitle != null && d.BatchTitle == request.BatchTitle)
+                            || (d.BatchTitle == null && d.FileName == request.BatchTitle))
+                .ToListAsync();
+
+            if (documents.Count == 0)
+                return NotFound(new { message = $"No documents found for title '{request.BatchTitle}'." });
+
+            // Load all PDFs from disk
+            var batch = new List<(byte[] PdfBytes, string FileName)>();
+            foreach (var doc in documents)
+            {
+                if (!System.IO.File.Exists(doc.StoredFilePath))
+                {
+                    return NotFound(new { message = $"PDF file for '{doc.FileName}' could not be found on the server." });
+                }
+                byte[] bytes = await System.IO.File.ReadAllBytesAsync(doc.StoredFilePath);
+                batch.Add((bytes, doc.FileName));
+            }
+
+            // Call Gemini with all PDFs
+            var (questions, errorDetail) = await geminiService.GenerateExamFromBatchAsync(batch, request.BatchTitle);
+
+            if (questions == null || questions.Count == 0)
+                return StatusCode(502, new
+                {
+                    message = "AI failed to generate exam questions. Please try again.",
+                    detail  = errorDetail ?? "Unknown error — check server logs for the [GeminiService] entries."
+                });
+
+            // Use the first document as the primary reference for the ExamQuestionnaire record
+            int primaryDocumentId = documents.First().Id;
+            string questionsJson  = System.Text.Json.JsonSerializer.Serialize(questions);
+
+            var exam = new ExamQuestionnaire
+            {
+                DocumentId    = primaryDocumentId,
+                GeneratedAt   = DateTime.UtcNow,
+                QuestionsJson = questionsJson
+            };
+
+            context.ExamQuestionnaires.Add(exam);
+            await context.SaveChangesAsync();
+
+            await auditLogService.LogDocumentExamAsync(
+                action: "Batch Exam Generated",
+                details: $"Generated {questions.Count}-question exam (Exam ID: {exam.Id}) from batch '{request.BatchTitle}' ({documents.Count} file(s))",
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+            );
+
+            return Ok(MapToGenerateResponse(exam, request.BatchTitle, questions));
+        }
+
         // ── Get All ───────────────────────────────────────────────────────────
+
 
         /// <summary>
         /// GET api/exam
@@ -99,7 +168,7 @@ namespace Project_OLMS.Controllers
                 .ToListAsync();
 
             var result = exams.Select(e =>
-                MapToResponse(e, e.Document?.FileName ?? string.Empty, DeserialiseQuestions(e.QuestionsJson)));
+                MapToResponse(e, GetExamTitle(e.Document), DeserialiseQuestions(e.QuestionsJson)));
 
             return Ok(result);
         }
@@ -122,7 +191,7 @@ namespace Project_OLMS.Controllers
                 return NotFound(new { message = $"Exam questionnaire with Id {examId} was not found." });
 
             var questions = DeserialiseQuestions(exam.QuestionsJson);
-            return Ok(MapToResponse(exam, exam.Document?.FileName ?? string.Empty, questions));
+            return Ok(MapToResponse(exam, GetExamTitle(exam.Document), questions));
         }
 
         // ── Download PDF ──────────────────────────────────────────────────────
@@ -143,33 +212,21 @@ namespace Project_OLMS.Controllers
                 return NotFound(new { message = $"Exam questionnaire with Id {examId} was not found." });
 
             var questions = DeserialiseQuestions(exam.QuestionsJson);
-            var documentName = exam.Document?.FileName ?? "Document";
+            var documentName = GetExamTitle(exam.Document);
 
             var pdfDocument = QuestPDF.Fluent.Document.Create(container =>
             {
                 container.Page(page =>
                 {
                     page.Size(PageSizes.A4);
-                    page.Margin(2, Unit.Centimetre);
+                    page.MarginHorizontal(1.5f, Unit.Centimetre);
+                    page.MarginTop(1.5f, Unit.Centimetre);
+                    page.MarginBottom(1.2f, Unit.Centimetre);
                     page.PageColor(Colors.White);
                     page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
 
-                    page.Header().Element(ComposeHeader);
                     page.Content().Element(ComposeContent);
                     page.Footer().Element(ComposeFooter);
-
-                    void ComposeHeader(IContainer container)
-                    {
-                        container.Row(row =>
-                        {
-                            row.RelativeItem().Column(column =>
-                            {
-                                column.Item().Text("NexusOCR Questionnaire").FontSize(20).SemiBold().FontColor(Colors.Blue.Darken2);
-                                column.Item().Text($"Source: {documentName}").FontSize(14).FontColor(Colors.Grey.Darken3);
-                                column.Item().Text($"Generated: {exam.GeneratedAt.ToLocalTime():MMM dd, yyyy HH:mm}").FontSize(10).FontColor(Colors.Grey.Medium);
-                            });
-                        });
-                    }
 
                     void ComposeContent(IContainer container)
                     {
@@ -251,33 +308,21 @@ namespace Project_OLMS.Controllers
                 return NotFound(new { message = $"Exam questionnaire with Id {examId} was not found." });
 
             var questions = DeserialiseQuestions(exam.QuestionsJson);
-            var documentName = exam.Document?.FileName ?? "Document";
+            var documentName = GetExamTitle(exam.Document);
 
             var pdfDocument = QuestPDF.Fluent.Document.Create(container =>
             {
                 container.Page(page =>
                 {
                     page.Size(PageSizes.A4);
-                    page.Margin(2, Unit.Centimetre);
+                    page.MarginHorizontal(1.5f, Unit.Centimetre);
+                    page.MarginTop(1.5f, Unit.Centimetre);
+                    page.MarginBottom(1.2f, Unit.Centimetre);
                     page.PageColor(Colors.White);
                     page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
 
-                    page.Header().Element(ComposeHeader);
                     page.Content().Element(ComposeQuestionsOnly);
                     page.Footer().Element(ComposeFooter);
-
-                    void ComposeHeader(IContainer container)
-                    {
-                        container.Row(row =>
-                        {
-                            row.RelativeItem().Column(column =>
-                            {
-                                column.Item().Text("NexusOCR Questionnaire (Questions Only)").FontSize(20).SemiBold().FontColor(Colors.Blue.Darken2);
-                                column.Item().Text($"Source: {documentName}").FontSize(14).FontColor(Colors.Grey.Darken3);
-                                column.Item().Text($"Generated: {exam.GeneratedAt.ToLocalTime():MMM dd, yyyy HH:mm}").FontSize(10).FontColor(Colors.Grey.Medium);
-                            });
-                        });
-                    }
 
                     void ComposeQuestionsOnly(IContainer container)
                     {
@@ -359,33 +404,21 @@ namespace Project_OLMS.Controllers
                 return NotFound(new { message = $"Exam questionnaire with Id {examId} was not found." });
 
             var questions = DeserialiseQuestions(exam.QuestionsJson);
-            var documentName = exam.Document?.FileName ?? "Document";
+            var documentName = GetExamTitle(exam.Document);
 
             var pdfDocument = QuestPDF.Fluent.Document.Create(container =>
             {
                 container.Page(page =>
                 {
                     page.Size(PageSizes.A4);
-                    page.Margin(2, Unit.Centimetre);
+                    page.MarginHorizontal(1.5f, Unit.Centimetre);
+                    page.MarginTop(1.5f, Unit.Centimetre);
+                    page.MarginBottom(1.2f, Unit.Centimetre);
                     page.PageColor(Colors.White);
                     page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
 
-                    page.Header().Element(ComposeHeader);
                     page.Content().Element(ComposeAnswersOnly);
                     page.Footer().Element(ComposeFooter);
-
-                    void ComposeHeader(IContainer container)
-                    {
-                        container.Row(row =>
-                        {
-                            row.RelativeItem().Column(column =>
-                            {
-                                column.Item().Text("NexusOCR Answer Key").FontSize(20).SemiBold().FontColor(Colors.Blue.Darken2);
-                                column.Item().Text($"Source: {documentName}").FontSize(14).FontColor(Colors.Grey.Darken3);
-                                column.Item().Text($"Generated: {exam.GeneratedAt.ToLocalTime():MMM dd, yyyy HH:mm}").FontSize(10).FontColor(Colors.Grey.Medium);
-                            });
-                        });
-                    }
 
                     void ComposeAnswersOnly(IContainer container)
                     {
@@ -456,12 +489,18 @@ namespace Project_OLMS.Controllers
                 .ToListAsync();
 
             var result = exams.Select(e =>
-                MapToResponse(e, e.Document?.FileName ?? string.Empty, DeserialiseQuestions(e.QuestionsJson)));
+                MapToResponse(e, GetExamTitle(e.Document), DeserialiseQuestions(e.QuestionsJson)));
 
             return Ok(result);
         }
 
         // ── Private Helpers ───────────────────────────────────────────────────
+
+        private static string GetExamTitle(Project_OLMS.Models.Document? doc)
+        {
+            if (doc == null) return "Questionnaire";
+            return !string.IsNullOrWhiteSpace(doc.BatchTitle) ? doc.BatchTitle : doc.FileName;
+        }
 
         private static List<QuestionItem> DeserialiseQuestions(string json)
         {

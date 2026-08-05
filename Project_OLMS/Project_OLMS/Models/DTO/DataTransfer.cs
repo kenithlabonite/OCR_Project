@@ -56,6 +56,32 @@ namespace Project_OLMS.Models.DTO
         public string NewPassword { get; set; } = string.Empty;
     }
 
+    public class UpdateProfileRequest
+    {
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string? Username { get; set; }
+        public string? Email { get; set; }
+        public string? NewPassword { get; set; }
+        public string? ContactNumber { get; set; }
+        public string? Address { get; set; }
+        public string? Status { get; set; }
+    }
+
+    public class UserProfileResponse
+    {
+        public string Id { get; set; } = string.Empty;
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string? ContactNumber { get; set; }
+        public string? Address { get; set; }
+        public string Status { get; set; } = "Active";
+        public string Role { get; set; } = "User";
+        public bool IsActive { get; set; } = true;
+    }
+
     // ── PDF Upload DTOs ──────────────────────────────────────────────────────
 
     /// <summary>
@@ -67,6 +93,9 @@ namespace Project_OLMS.Models.DTO
         /// <summary>Optional human-readable description for the document.</summary>
         [StringLength(1000, ErrorMessage = "Description must not exceed 1000 characters.")]
         public string? Description { get; set; }
+
+        [StringLength(255)]
+        public string? BatchTitle { get; set; }
 
         /// <summary>
         /// Id of the user uploading the file. Treated as optional here so the
@@ -86,12 +115,22 @@ namespace Project_OLMS.Models.DTO
         public string ContentType { get; set; } = string.Empty;
         public long FileSizeBytes { get; set; }
         public string? Description { get; set; }
+        public string? BatchTitle { get; set; }
         public string? AiSummary { get; set; }
         public string? UploadedByUserId { get; set; }
         public DateTime UploadedAt { get; set; }
     }
 
     // ── Exam Questionnaire DTOs ──────────────────────────────────────────────
+
+    /// <summary>
+    /// Request body for POST api/exam/generate-by-title.
+    /// </summary>
+    public class GenerateByTitleRequest
+    {
+        /// <summary>The batch title used to locate all related documents.</summary>
+        public string BatchTitle { get; set; } = string.Empty;
+    }
 
     /// <summary>
     /// Returned immediately after a new exam questionnaire is generated.

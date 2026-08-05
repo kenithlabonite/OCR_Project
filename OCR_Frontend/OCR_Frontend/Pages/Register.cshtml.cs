@@ -48,8 +48,8 @@ namespace OCR_Frontend.Pages
             var response = await client.PostAsJsonAsync("/api/auth/register", registerDto);
             if (!response.IsSuccessStatusCode)
             {
-                var errorText = await response.Content.ReadAsStringAsync();
-                ModelState.AddModelError(string.Empty, string.IsNullOrWhiteSpace(errorText) ? "Registration failed." : errorText);
+                var errorText = await OCR_Frontend.Helpers.ApiErrorHelper.ExtractErrorMessageAsync(response, "Registration failed.");
+                ModelState.AddModelError(string.Empty, errorText);
                 return Page();
             }
 

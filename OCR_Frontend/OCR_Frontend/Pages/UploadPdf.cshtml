@@ -39,6 +39,11 @@
                     </div>
 
                     <div class="mb-4">
+                        <label class="form-label" asp-for="BatchTitle">Title (Optional, for grouping PDFs)</label>
+                        <input asp-for="BatchTitle" type="text" class="form-control" placeholder="Enter a batch title..." />
+                    </div>
+
+                    <div class="mb-4">
                         <label class="form-label" asp-for="Description">Description (Optional)</label>
                         <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter a brief description of the document..."></textarea>
                     </div>

@@ -82,6 +82,7 @@ namespace Project_OLMS.Controllers
                     FileSizeBytes      = file.Length,
                     StoredFilePath     = storedPath,
                     Description        = metadata.Description,
+                    BatchTitle         = metadata.BatchTitle,
                     AiSummary          = aiSummary,
                     UploadedByUserId   = metadata.UploadedByUserId,
                     UploadedAt         = DateTime.UtcNow
@@ -101,6 +102,39 @@ namespace Project_OLMS.Controllers
             }
 
             return Ok(responses);
+        }
+
+        // ── Get Distinct Titles ───────────────────────────────────────────────
+
+        /// <summary>
+        /// GET api/pdfupload/titles
+        /// Returns a list of distinct batch titles. Documents without a BatchTitle
+        /// are grouped under their file name so they still appear in the list.
+        /// Each entry includes the title and the IDs of all documents in that group.
+        /// </summary>
+        [HttpGet("titles")]
+        public async Task<IActionResult> GetTitles()
+        {
+            var documents = await context.Documents
+                .AsNoTracking()
+                .OrderByDescending(d => d.UploadedAt)
+                .ToListAsync();
+
+            // Group: if BatchTitle is set use it, otherwise fall back to FileName
+            var groups = documents
+                .GroupBy(d => !string.IsNullOrWhiteSpace(d.BatchTitle) ? d.BatchTitle : d.FileName)
+                .Select(g => new
+                {
+                    Title       = g.Key,
+                    DocumentIds = g.Select(d => d.Id).ToList(),
+                    FileNames   = g.Select(d => d.FileName).ToList(),
+                    FileCount   = g.Count(),
+                    UploadedAt  = g.Max(d => d.UploadedAt)
+                })
+                .OrderByDescending(g => g.UploadedAt)
+                .ToList();
+
+            return Ok(groups);
         }
 
         // ── Get All ───────────────────────────────────────────────────────────
@@ -213,6 +247,7 @@ namespace Project_OLMS.Controllers
             ContentType      = doc.ContentType,
             FileSizeBytes    = doc.FileSizeBytes,
             Description      = doc.Description,
+            BatchTitle       = doc.BatchTitle,
             AiSummary        = doc.AiSummary,
             UploadedByUserId = doc.UploadedByUserId,
             UploadedAt       = doc.UploadedAt

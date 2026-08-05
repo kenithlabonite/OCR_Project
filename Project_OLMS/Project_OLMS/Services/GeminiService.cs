@@ -22,6 +22,14 @@ namespace Project_OLMS.Services
             byte[] pdfBytes, string fileName);
 
         /// <summary>
+        /// Generates a 10-item multiple-choice examination questionnaire from multiple PDFs
+        /// (a batch/topic). All PDFs are sent together so Gemini covers the full quarter's lessons.
+        /// Returns a tuple: Questions (null on failure) and ErrorDetail (null on success).
+        /// </summary>
+        Task<(List<QuestionItem>? Questions, string? ErrorDetail)> GenerateExamFromBatchAsync(
+            List<(byte[] PdfBytes, string FileName)> batch, string batchTitle);
+
+        /// <summary>
         /// Scans an image of a student answer sheet and extracts question numbers and student answers using Gemini Vision.
         /// </summary>
         Task<(Dictionary<int, string>? Answers, string RawText, string? ErrorDetail)> ScanAnswerSheetAsync(
@@ -278,6 +286,109 @@ namespace Project_OLMS.Services
             }
         }
 
+        // ── Batch Exam Generator (multiple PDFs / quarter) ──────────────────────
+
+        public async Task<(List<QuestionItem>? Questions, string? ErrorDetail)> GenerateExamFromBatchAsync(
+            List<(byte[] PdfBytes, string FileName)> batch, string batchTitle)
+        {
+            if (batch == null || batch.Count == 0)
+                return (null, "No PDF files were provided in the batch.");
+
+            // Validate total size
+            long totalBytes = batch.Sum(b => (long)b.PdfBytes.Length);
+            if (totalBytes > MaxInlineSizeBytes * batch.Count)
+            {
+                string msg = $"Batch '{batchTitle}' total size {totalBytes / (1024 * 1024)} MB exceeds limits.";
+                _logger.LogWarning("[GeminiService] {Msg}", msg);
+                return (null, msg);
+            }
+
+            string? rawResponse = null;
+
+            try
+            {
+                string fileList = string.Join(", ", batch.Select(b => $"'{b.FileName}'"));
+                string prompt =
+                    "You are an expert educator and examination writer. " +
+                    $"The following {batch.Count} PDF document(s) from the topic/quarter titled '{batchTitle}' are attached: {fileList}. " +
+                    "Read all of them carefully and create exactly 10 multiple-choice questions that comprehensively test " +
+                    "understanding across ALL the provided documents in this batch. " +
+                    "Cover a range of topics from the different documents — do not focus on just one file. " +
+                    "Do not include phrases like 'According to the document', 'Based on the text', 'According to the PDF', or similar in the question text. Ask the questions directly. " +
+                    "Your response must be ONLY a raw JSON array — no markdown, " +
+                    "no code fences, no explanatory text before or after. " +
+                    "Each element of the array must have EXACTLY these fields:\n" +
+                    "  number        : integer 1-10\n" +
+                    "  questionText  : string\n" +
+                    "  optionA       : string\n" +
+                    "  optionB       : string\n" +
+                    "  optionC       : string\n" +
+                    "  optionD       : string\n" +
+                    "  correctAnswer : string — exactly one of: A, B, C, or D\n" +
+                    "  explanation   : string — one sentence explaining why the answer is correct\n\n" +
+                    "Start your response with [ and end with ].";
+
+                _logger.LogInformation(
+                    "[GeminiService] Sending batch exam-generation request for title '{BatchTitle}' ({Count} files)...",
+                    batchTitle, batch.Count);
+
+                var files = batch.Select(b => (b.PdfBytes, (string)"application/pdf")).ToList();
+                rawResponse = await CallGeminiApiForMultipleImagesAsync(prompt, files);
+
+                _logger.LogInformation(
+                    "[GeminiService] Raw batch AI response for '{BatchTitle}': {Preview}",
+                    batchTitle,
+                    rawResponse?.Length > 400 ? rawResponse[..400] + "…" : rawResponse ?? "(null)");
+
+                if (string.IsNullOrWhiteSpace(rawResponse))
+                {
+                    const string emptyMsg = "Gemini returned an empty response for the batch.";
+                    _logger.LogWarning("[GeminiService] {Msg} BatchTitle='{BatchTitle}'", emptyMsg, batchTitle);
+                    return (null, emptyMsg);
+                }
+
+                string? jsonArray = ExtractJsonArray(rawResponse);
+                if (jsonArray == null)
+                {
+                    string noArrMsg = $"Could not locate a JSON array in the AI response. " +
+                                     $"First 200 chars: {rawResponse[..Math.Min(200, rawResponse.Length)]}";
+                    _logger.LogWarning("[GeminiService] {Msg}", noArrMsg);
+                    return (null, noArrMsg);
+                }
+
+                var questions = JsonSerializer.Deserialize<List<QuestionItem>>(jsonArray, _jsonOptions);
+
+                if (questions == null || questions.Count == 0)
+                {
+                    const string emptyListMsg = "JSON parsed OK but the question list is empty.";
+                    _logger.LogWarning("[GeminiService] {Msg} BatchTitle='{BatchTitle}'", emptyListMsg, batchTitle);
+                    return (null, emptyListMsg);
+                }
+
+                _logger.LogInformation(
+                    "[GeminiService] Generated {Count} questions for batch '{BatchTitle}'",
+                    questions.Count, batchTitle);
+
+                return (questions, null);
+            }
+            catch (JsonException jsonEx)
+            {
+                string detail = $"JSON parse error: {jsonEx.Message} | Raw: " +
+                                (rawResponse?.Length > 300
+                                    ? rawResponse[..300] + "…"
+                                    : rawResponse ?? "(null)");
+                _logger.LogError(jsonEx,
+                    "[GeminiService] JSON parse failed for batch '{BatchTitle}'. {Detail}", batchTitle, detail);
+                return (null, detail);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "[GeminiService] Batch exam generation threw an exception for '{BatchTitle}'", batchTitle);
+                return (null, ex.Message);
+            }
+        }
+
         // ── Private Helpers ───────────────────────────────────────────────────
 
         /// <summary>
@@ -333,6 +444,7 @@ namespace Project_OLMS.Services
                     "You are an automated exam answer sheet scanner and grader AI. " +
                     "An image of a student's answer sheet or questionnaire is attached. " +
                     "Carefully examine each question item (e.g. 1, 2, 3...) and find the student's handwritten or selected answer letter (A, B, C, or D).\n" +
+                    "Read and follow the instructions provided in the test paper or test questionnaires"+
                     "Note: Answers are written on blank lines before item numbers (e.g. 'B 1.', 'A 2.', 'b 5.'), " +
                     "written next to question text, or marked among the options.\n" +
                     "Return your analysis strictly as a JSON object — no markdown, no code blocks, no prose.\n" +

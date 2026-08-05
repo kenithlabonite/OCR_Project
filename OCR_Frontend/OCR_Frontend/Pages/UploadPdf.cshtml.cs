@@ -17,6 +17,9 @@ namespace OCR_Frontend.Pages
         public List<IFormFile> PdfFiles { get; set; } = new();
 
         [BindProperty]
+        public string? BatchTitle { get; set; }
+
+        [BindProperty]
         public string? Description { get; set; }
 
         public string? SuccessMessage { get; set; }
@@ -60,6 +63,10 @@ namespace OCR_Frontend.Pages
             {
                 content.Add(new StringContent(Description), "Description");
             }
+            if (!string.IsNullOrEmpty(BatchTitle))
+            {
+                content.Add(new StringContent(BatchTitle), "BatchTitle");
+            }
             
             // Add Auth token
             var token = Request.Cookies["AuthToken"];
@@ -76,8 +83,7 @@ namespace OCR_Frontend.Pages
             }
             else
             {
-                var errorText = await response.Content.ReadAsStringAsync();
-                ErrorMessage = string.IsNullOrWhiteSpace(errorText) ? "Failed to upload PDF(s)." : errorText;
+                ErrorMessage = await OCR_Frontend.Helpers.ApiErrorHelper.ExtractErrorMessageAsync(response, "Failed to upload PDF(s).");
             }
 
             return Page();

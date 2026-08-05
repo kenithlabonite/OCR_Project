@@ -48,8 +48,8 @@ namespace OCR_Frontend.Pages
 
             if (!response.IsSuccessStatusCode)
             {
-                var error = await response.Content.ReadAsStringAsync();
-                ModelState.AddModelError(string.Empty, string.IsNullOrWhiteSpace(error) ? "Password reset failed. Check your code and try again." : error);
+                var error = await OCR_Frontend.Helpers.ApiErrorHelper.ExtractErrorMessageAsync(response, "Password reset failed. Check your code and try again.");
+                ModelState.AddModelError(string.Empty, error);
                 return Page();
             }
 
