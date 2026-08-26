@@ -25,6 +25,9 @@ namespace OCR_Frontend.Pages
         public string? ErrorMessage { get; set; }
         public string? SuccessMessage { get; set; }
 
+        [BindProperty]
+        public CreateUserModel NewUser { get; set; } = new();
+
         public async Task<IActionResult> OnGetAsync()
         {
             // Check admin role
@@ -101,6 +104,35 @@ namespace OCR_Frontend.Pages
             return Page();
         }
 
+        public async Task<IActionResult> OnPostCreateUserAsync()
+        {
+            var role = Request.Cookies["UserRole"];
+            if (role != "Admin") return RedirectToPage("/Dashboard");
+
+            var client = CreateAuthClient();
+            var response = await client.PostAsJsonAsync("/api/admin/users/create", NewUser);
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<ActionResultDto>();
+                SuccessMessage = result?.Message ?? "New account created successfully.";
+            }
+            else
+            {
+                try
+                {
+                    var errObj = await response.Content.ReadFromJsonAsync<ActionResultDto>();
+                    ErrorMessage = errObj?.Message ?? "Failed to create user account.";
+                }
+                catch
+                {
+                    ErrorMessage = await response.Content.ReadAsStringAsync();
+                }
+            }
+
+            await LoadAllDataAsync();
+            return Page();
+        }
+
         private HttpClient CreateAuthClient()
         {
             var client = _httpClientFactory.CreateClient("BackendClient");
@@ -163,6 +195,15 @@ namespace OCR_Frontend.Pages
         private class ActionResultDto
         {
             public string? Message { get; set; }
+        }
+
+        public class CreateUserModel
+        {
+            public string Username { get; set; } = string.Empty;
+            public string Email { get; set; } = string.Empty;
+            public string Password { get; set; } = string.Empty;
+            public string Role { get; set; } = "User";
+            public bool IsEmailVerified { get; set; } = true;
         }
     }
 }

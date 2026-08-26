@@ -1,4 +1,4 @@
-// NexusOCR Session & AFK Inactivity Timeout Manager
+// NexusOCR Session Inactivity Timeout Manager
 (function () {
     // Determine if user is logged in
     function getCookie(name) {
@@ -25,9 +25,9 @@
         return;
     }
 
-    // Configuration: 3 Minutes (180 seconds) AFK timeout
+    // Configuration: 3 Minutes (180 seconds) Session timeout
     const TOTAL_TIMEOUT_SECONDS = 180;
-    const WARNING_THRESHOLD_SECONDS = 60; // Show warning modal when 60s remain (2 mins AFK)
+    const WARNING_THRESHOLD_SECONDS = 60; // Show warning modal when 60s remain (2 mins inactive)
 
     let lastActivityTimestamp = Date.now();
     let isWarningModalOpen = false;
@@ -54,8 +54,8 @@
     });
 
     function updateHeaderBadge(remainingSeconds) {
-        const badgeTimerEl = document.getElementById('afkHeaderTimer');
-        const badgeBoxEl = document.getElementById('afkStatusBadge');
+        const badgeTimerEl = document.getElementById('sessionHeaderTimer') || document.getElementById('afkHeaderTimer');
+        const badgeBoxEl = document.getElementById('sessionStatusBadge') || document.getElementById('afkStatusBadge');
         if (badgeTimerEl) {
             badgeTimerEl.textContent = formatMMSS(remainingSeconds);
         }
@@ -71,28 +71,28 @@
     }
 
     function injectWarningModal() {
-        if (document.getElementById('afkWarningModal')) return;
+        if (document.getElementById('sessionWarningModal')) return;
 
         const modalHtml = `
-        <div class="modal fade" id="afkWarningModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true" style="z-index: 1060;">
+        <div class="modal fade" id="sessionWarningModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false" aria-hidden="true" style="z-index: 1060;">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content glass-panel border-warning shadow-lg">
                     <div class="modal-header border-0 bg-warning bg-opacity-10 text-dark pt-4 px-4">
                         <h5 class="modal-title fw-bold text-warning-emphasis d-flex align-items-center gap-2">
-                            <i class="bi bi-clock-history text-warning fs-3"></i> Away From Keyboard (AFK) Warning
+                            <i class="bi bi-clock-history text-warning fs-3"></i> Session Inactivity Warning
                         </h5>
                     </div>
                     <div class="modal-body text-center py-4 px-4">
                         <p class="text-secondary mb-2">You have been inactive for over 2 minutes.</p>
                         <p class="mb-3">To keep your account secure, your session will automatically expire in:</p>
-                        <div class="display-3 fw-bold text-danger my-3" id="afkModalTimer">01:00</div>
+                        <div class="display-3 fw-bold text-danger my-3" id="sessionModalTimer">01:00</div>
                         <div class="progress mb-3" style="height: 6px;">
-                            <div id="afkProgressBar" class="progress-bar bg-danger progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%;"></div>
+                            <div id="sessionProgressBar" class="progress-bar bg-danger progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%;"></div>
                         </div>
                         <p class="small text-muted mb-0">Press any key, move your mouse, or click the button below to resume your session.</p>
                     </div>
                     <div class="modal-footer border-0 justify-content-center gap-2 pb-4">
-                        <button type="button" class="btn btn-primary px-4 py-2 fw-semibold" id="afkResumeSessionBtn">
+                        <button type="button" class="btn btn-primary px-4 py-2 fw-semibold" id="sessionResumeSessionBtn">
                             <i class="bi bi-check-circle-fill me-1"></i> I'm Back (Stay Logged In)
                         </button>
                         <a href="/Logout" class="btn btn-outline-secondary px-3 py-2">
@@ -105,7 +105,7 @@
 
         document.body.insertAdjacentHTML('beforeend', modalHtml);
 
-        const resumeBtn = document.getElementById('afkResumeSessionBtn');
+        const resumeBtn = document.getElementById('sessionResumeSessionBtn');
         if (resumeBtn) {
             resumeBtn.addEventListener('click', function () {
                 resetActivity();
@@ -115,7 +115,7 @@
 
     function openWarningModal() {
         injectWarningModal();
-        const modalEl = document.getElementById('afkWarningModal');
+        const modalEl = document.getElementById('sessionWarningModal');
         if (modalEl && typeof bootstrap !== 'undefined') {
             const bsModal = bootstrap.Modal.getOrCreateInstance(modalEl);
             bsModal.show();
@@ -124,7 +124,7 @@
     }
 
     function closeWarningModal() {
-        const modalEl = document.getElementById('afkWarningModal');
+        const modalEl = document.getElementById('sessionWarningModal');
         if (modalEl && typeof bootstrap !== 'undefined') {
             const bsModal = bootstrap.Modal.getInstance(modalEl);
             if (bsModal) {
@@ -140,7 +140,7 @@
         cookies.forEach(c => {
             document.cookie = `${c}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         });
-        window.location.href = "/Login?reason=afk_timeout";
+        window.location.href = "/Login?reason=session_timeout";
     }
 
     // Tick every 1000ms (1 second)
@@ -159,11 +159,11 @@
             if (!isWarningModalOpen) {
                 openWarningModal();
             }
-            const modalTimerEl = document.getElementById('afkModalTimer');
+            const modalTimerEl = document.getElementById('sessionModalTimer');
             if (modalTimerEl) {
                 modalTimerEl.textContent = formatMMSS(remainingSecs);
             }
-            const progressBarEl = document.getElementById('afkProgressBar');
+            const progressBarEl = document.getElementById('sessionProgressBar');
             if (progressBarEl) {
                 const pct = (remainingSecs / WARNING_THRESHOLD_SECONDS) * 100;
                 progressBarEl.style.width = `${pct}%`;

@@ -21,12 +21,23 @@
                 </div>
             }
 
-            @if (Request.Query["reason"] == "afk_timeout")
+            @if (Request.Query["reason"] == "session_timeout" || Request.Query["reason"] == "afk_timeout")
             {
-                <div class="alert alert-warning alert-dismissible fade show border-0 shadow-sm" role="alert">
-                    <i class="bi bi-clock-history me-2 text-warning fs-5"></i>
-                    <strong>Session Expired:</strong> You were automatically logged out due to 3 minutes of inactivity (AFK). Please sign in again.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                <!-- Session Expired Modal -->
+                <div class="modal fade" id="sessionExpiredModal" tabindex="-1" aria-labelledby="sessionExpiredModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content glass-panel border-warning shadow-lg">
+                            <div class="modal-body text-center py-4 px-4">
+                                <div class="mb-3">
+                                    <i class="bi bi-clock-history text-warning" style="font-size: 3rem;"></i>
+                                </div>
+                                <h5 class="fw-bold text-dark mb-2" id="sessionExpiredModalLabel">Session Expired</h5>
+                                <p class="text-secondary mb-0">
+                                    You were automatically logged out due to 3 minutes of inactivity. Please sign in again.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             }
 
@@ -66,3 +77,21 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    @if (Request.Query["reason"] == "session_timeout" || Request.Query["reason"] == "afk_timeout")
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                const modalEl = document.getElementById("sessionExpiredModal");
+                if (modalEl && typeof bootstrap !== "undefined") {
+                    const bsModal = new bootstrap.Modal(modalEl);
+                    bsModal.show();
+                    setTimeout(function () {
+                        bsModal.hide();
+                    }, 2000);
+                }
+            });
+        </script>
+    }
+}

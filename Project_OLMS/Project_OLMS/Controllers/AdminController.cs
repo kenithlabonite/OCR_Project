@@ -163,9 +163,96 @@ namespace Project_OLMS.Controllers
             return Ok(new { message = $"User '{deletedUsername}' has been permanently deleted." });
         }
 
+        // ── Create User Account ───────────────────────────────────────────────
+
+        /// <summary>
+        /// POST api/admin/users/create
+        /// Creates a new user account directly from the admin panel.
+        /// </summary>
+        [HttpPost("users/create")]
+        public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Email) || string.IsNullOrWhiteSpace(request.Password))
+            {
+                return BadRequest(new { message = "Username, Email, and Password are required." });
+            }
+
+            bool emailExists = await context.Users.AnyAsync(u => u.Email == request.Email);
+            if (emailExists)
+            {
+                return BadRequest(new { message = "Email is already registered." });
+            }
+
+            string generatedId = await GenerateCustomIdAsync();
+            string hashedPassword = BCrypt.Net.BCrypt.HashPassword(request.Password);
+
+            var newUser = new Project_OLMS.Models.Auth
+            {
+                Id = generatedId,
+                Username = request.Username,
+                Email = request.Email,
+                Password = hashedPassword,
+                Role = string.Equals(request.Role, "Admin", StringComparison.OrdinalIgnoreCase) ? "Admin" : "User",
+                IsActive = true,
+                IsEmailVerified = request.IsEmailVerified
+            };
+
+            context.Users.Add(newUser);
+            await context.SaveChangesAsync();
+
+            await auditLogService.LogUserActivityAsync(
+                action: "User Created by Admin",
+                details: $"Admin created new account '{newUser.Username}' ({newUser.Email}) with Role '{newUser.Role}' and ID '{generatedId}'",
+                userId: generatedId,
+                username: newUser.Username,
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+            );
+
+            return Ok(new
+            {
+                message = $"User account '{newUser.Username}' (ID: {generatedId}) created successfully!",
+                userId = generatedId,
+                username = newUser.Username,
+                email = newUser.Email,
+                role = newUser.Role
+            });
+        }
+
+        private async Task<string> GenerateCustomIdAsync()
+        {
+            string yearPrefix = DateTime.UtcNow.ToString("yy");
+
+            var lastUserThisYear = await context.Users
+                .Where(u => u.Id.StartsWith(yearPrefix + "-"))
+                .OrderByDescending(u => u.Id)
+                .FirstOrDefaultAsync();
+
+            int nextSequence = 0;
+
+            if (lastUserThisYear != null)
+            {
+                var parts = lastUserThisYear.Id.Split('-');
+                if (parts.Length > 1 && int.TryParse(parts[1], out int lastSequence))
+                {
+                    nextSequence = lastSequence + 1;
+                }
+            }
+
+            return $"{yearPrefix}-{nextSequence:D4}";
+        }
+
         public class ChangeRoleRequest
         {
             public string Role { get; set; } = "User";
+        }
+
+        public class CreateUserRequest
+        {
+            public string Username { get; set; } = string.Empty;
+            public string Email { get; set; } = string.Empty;
+            public string Password { get; set; } = string.Empty;
+            public string Role { get; set; } = "User";
+            public bool IsEmailVerified { get; set; } = true;
         }
     }
 }
