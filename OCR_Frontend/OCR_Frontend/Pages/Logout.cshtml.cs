@@ -12,6 +12,7 @@ namespace OCR_Frontend.Pages
             Response.Cookies.Delete("DisplayName");
             Response.Cookies.Delete("DisplayEmail");
             Response.Cookies.Delete("UserRole");
+            Response.Cookies.Delete("UserId");
             // Redirect to the login page after logout
             return RedirectToPage("/Login");
         }

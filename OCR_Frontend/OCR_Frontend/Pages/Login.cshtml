@@ -21,26 +21,6 @@
                 </div>
             }
 
-            @if (Request.Query["reason"] == "session_timeout" || Request.Query["reason"] == "afk_timeout")
-            {
-                <!-- Session Expired Modal -->
-                <div class="modal fade" id="sessionExpiredModal" tabindex="-1" aria-labelledby="sessionExpiredModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content glass-panel border-warning shadow-lg">
-                            <div class="modal-body text-center py-4 px-4">
-                                <div class="mb-3">
-                                    <i class="bi bi-clock-history text-warning" style="font-size: 3rem;"></i>
-                                </div>
-                                <h5 class="fw-bold text-dark mb-2" id="sessionExpiredModalLabel">Session Expired</h5>
-                                <p class="text-secondary mb-0">
-                                    You were automatically logged out due to 3 minutes of inactivity. Please sign in again.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
-
             <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
             <form method="post">
@@ -64,7 +44,7 @@
                 </div>
                 
                 <div class="mb-4 form-check">
-                    <input type="checkbox" class="form-check-input" id="rememberMe">
+                    <input asp-for="RememberMe" type="checkbox" class="form-check-input" id="rememberMe">
                     <label class="form-check-label" for="rememberMe">Remember me</label>
                 </div>
                 
@@ -79,19 +59,37 @@
 </div>
 
 @section Scripts {
-    @if (Request.Query["reason"] == "session_timeout" || Request.Query["reason"] == "afk_timeout")
-    {
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                const modalEl = document.getElementById("sessionExpiredModal");
-                if (modalEl && typeof bootstrap !== "undefined") {
-                    const bsModal = new bootstrap.Modal(modalEl);
-                    bsModal.show();
-                    setTimeout(function () {
-                        bsModal.hide();
-                    }, 2000);
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const emailInput = document.getElementById("Email");
+            const passwordInput = document.getElementById("Password");
+            const rememberMeCheckbox = document.getElementById("rememberMe");
+            const form = document.querySelector("form");
+
+            // Client-side fallback: pre-fill remembered email from localStorage if not already rendered by server
+            if (emailInput && !emailInput.value) {
+                const storedEmail = localStorage.getItem("rememberedEmail");
+                if (storedEmail) {
+                    emailInput.value = storedEmail;
+                    if (rememberMeCheckbox) rememberMeCheckbox.checked = true;
                 }
-            });
-        </script>
-    }
+            }
+
+            // If email is already pre-filled (via cookie or localStorage), auto-focus the password field
+            if (emailInput && emailInput.value && passwordInput) {
+                passwordInput.focus();
+            }
+
+            // Sync with localStorage on submit
+            if (form && emailInput && rememberMeCheckbox) {
+                form.addEventListener("submit", function () {
+                    if (rememberMeCheckbox.checked && emailInput.value.trim()) {
+                        localStorage.setItem("rememberedEmail", emailInput.value.trim());
+                    } else {
+                        localStorage.removeItem("rememberedEmail");
+                    }
+                });
+            }
+        });
+    </script>
 }

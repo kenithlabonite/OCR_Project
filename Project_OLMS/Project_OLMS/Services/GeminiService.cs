@@ -45,8 +45,8 @@ namespace Project_OLMS.Services
     public class GeminiService : IGeminiService
     {
         private readonly string _apiKey;
+        private readonly string _modelId;
         private readonly ILogger<GeminiService> _logger;
-        private const string ModelId = "gemini-3.5-flash";
         private const int MaxInlineSizeBytes = 20 * 1024 * 1024;
         
         // We use IHttpClientFactory if available, otherwise fallback to a static client for simplicity
@@ -64,6 +64,9 @@ namespace Project_OLMS.Services
             _logger = logger;
             _apiKey = configuration["Gemini:ApiKey"]
                       ?? throw new InvalidOperationException("Gemini API key is not configured.");
+            _modelId = string.IsNullOrWhiteSpace(configuration["Gemini:Model"]) 
+                       ? "gemini-3.5-flash" 
+                       : configuration["Gemini:Model"]!;
         }
 
         // ── Direct HTTP Call to Gemini (Bypassing Mscc.GenerativeAI length validation) ──
@@ -75,7 +78,7 @@ namespace Project_OLMS.Services
 
         private async Task<string?> CallGeminiApiForMultipleImagesAsync(string prompt, List<(byte[] Bytes, string MimeType)> files)
         {
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{ModelId}:generateContent?key={_apiKey}";
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_modelId}:generateContent?key={_apiKey}";
             
             var partsList = new List<object>
             {

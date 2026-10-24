@@ -14,6 +14,10 @@ namespace OCR_Frontend.Pages
 
         public IActionResult OnGet()
         {
+            if (Request.Cookies.TryGetValue("AuthToken", out var token) && !string.IsNullOrWhiteSpace(token))
+            {
+                return RedirectToPage("/Dashboard");
+            }
             return RedirectToPage("/Login");
         }
     }

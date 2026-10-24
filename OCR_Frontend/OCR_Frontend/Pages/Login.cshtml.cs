@@ -20,8 +20,25 @@ namespace OCR_Frontend.Pages
         [BindProperty]
         public string Password { get; set; } = string.Empty;
 
-        public void OnGet()
+        [BindProperty]
+        public bool RememberMe { get; set; }
+
+        public IActionResult OnGet()
         {
+            // If the user already has a valid AuthToken, redirect straight to Dashboard
+            if (Request.Cookies.TryGetValue("AuthToken", out var token) && !string.IsNullOrWhiteSpace(token))
+            {
+                return RedirectToPage("/Dashboard");
+            }
+
+            // Pre-fill remembered email and check RememberMe if previously saved
+            if (Request.Cookies.TryGetValue("RememberedEmail", out var rememberedEmail) && !string.IsNullOrWhiteSpace(rememberedEmail))
+            {
+                Email = rememberedEmail;
+                RememberMe = true;
+            }
+
+            return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
@@ -45,22 +62,26 @@ namespace OCR_Frontend.Pages
                 return Page();
             }
 
+            // Normal session cookie (persists while browser is open) or 14-day persistent cookie if Remember Me is checked
+            DateTimeOffset? cookieExpires = RememberMe ? DateTimeOffset.UtcNow.AddDays(14) : null;
+
             // Store JWT in HttpOnly cookie
-            Response.Cookies.Append("AuthToken", result.Token, new Microsoft.AspNetCore.Http.CookieOptions
+            var authCookieOptions = new Microsoft.AspNetCore.Http.CookieOptions
             {
                 HttpOnly = true,
                 Secure = false,
                 SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax,
-                Expires = DateTimeOffset.UtcNow.AddHours(1)
-            });
+                Expires = cookieExpires
+            };
+            Response.Cookies.Append("AuthToken", result.Token, authCookieOptions);
 
-            // Store display info in readable cookies (not sensitive)
+            // Store display info in readable cookies
             var displayCookieOptions = new Microsoft.AspNetCore.Http.CookieOptions
             {
                 HttpOnly = false,
                 Secure = false,
                 SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax,
-                Expires = DateTimeOffset.UtcNow.AddHours(1)
+                Expires = cookieExpires
             };
             if (!string.IsNullOrEmpty(result.Id))
                 Response.Cookies.Append("UserId", result.Id, displayCookieOptions);
@@ -70,6 +91,22 @@ namespace OCR_Frontend.Pages
                 Response.Cookies.Append("DisplayEmail", result.Email, displayCookieOptions);
             if (!string.IsNullOrEmpty(result.Role))
                 Response.Cookies.Append("UserRole", result.Role, displayCookieOptions);
+
+            // Remember or forget email for future logins
+            if (RememberMe)
+            {
+                Response.Cookies.Append("RememberedEmail", Email, new Microsoft.AspNetCore.Http.CookieOptions
+                {
+                    HttpOnly = false,
+                    Secure = false,
+                    SameSite = Microsoft.AspNetCore.Http.SameSiteMode.Lax,
+                    Expires = DateTimeOffset.UtcNow.AddDays(30)
+                });
+            }
+            else
+            {
+                Response.Cookies.Delete("RememberedEmail");
+            }
 
             return RedirectToPage("/Dashboard");
         }
