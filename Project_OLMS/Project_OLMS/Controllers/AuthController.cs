@@ -5,13 +5,31 @@ using Project_OLMS.Services;
 using MyDTOs = Project_OLMS.Models;
 using System.Security.Cryptography;
 using BC = BCrypt.Net.BCrypt;
+using Microsoft.Extensions.Configuration;
+using System.IdentityModel.Tokens.Jwt;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
+using System.Text;
 
 namespace Project_OLMS.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController(AppDbContext context, IEmailService emailService, IAuditLogService auditLogService) : ControllerBase
+    public class AuthController : ControllerBase
     {
+        private readonly AppDbContext context;
+        private readonly IEmailService emailService;
+        private readonly IAuditLogService auditLogService;
+        private readonly IConfiguration _config;
+
+        public AuthController(AppDbContext context, IEmailService emailService, IAuditLogService auditLogService, IConfiguration config) : base()
+        {
+            this.context = context;
+            this.emailService = emailService;
+            this.auditLogService = auditLogService;
+            _config = config;
+        }
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] MyDTOs.DTO.RegisterRequest request)
         {
@@ -383,10 +401,27 @@ namespace Project_OLMS.Controllers
             return Convert.ToBase64String(randomNumber);
         }
 
-        private static string GenerateJwtToken(MyDTOs.Auth user)
+        private string GenerateJwtToken(MyDTOs.Auth user)
         {
-            _ = user;
-            return "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.MockJwtTokenStringGoesHere";
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+                new Claim(JwtRegisteredClaimNames.Email, user.Email),
+                new Claim("username", user.Username),
+                new Claim(ClaimTypes.Role, user.Role ?? "User")
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddHours(2),
+                signingCredentials: creds);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
