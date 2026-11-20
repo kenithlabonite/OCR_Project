@@ -40,14 +40,11 @@ namespace OCR_Frontend.Pages
             var client = _httpClientFactory.CreateClient("BackendClient");
             var token = Request.Cookies["AuthToken"];
 
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
-            else
+            if (string.IsNullOrEmpty(token))
             {
                 return RedirectToPage("/Login");
             }
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
             var response = await client.GetAsync("/api/pdfupload");
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -84,11 +81,7 @@ namespace OCR_Frontend.Pages
             }
 
             var client = _httpClientFactory.CreateClient("BackendClient");
-            var token = Request.Cookies["AuthToken"];
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
             var payload = new { OldTitle = oldTitle, NewTitle = newTitle.Trim() };
             var response = await client.PutAsJsonAsync("/api/pdfupload/batch-title", payload);
@@ -116,11 +109,7 @@ namespace OCR_Frontend.Pages
             }
 
             var client = _httpClientFactory.CreateClient("BackendClient");
-            var token = Request.Cookies["AuthToken"];
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
             var payload = new { BatchTitle = batchTitle?.Trim() ?? string.Empty };
             var response = await client.PutAsJsonAsync($"/api/pdfupload/{id}/batch-title", payload);
@@ -141,12 +130,7 @@ namespace OCR_Frontend.Pages
         public async Task<IActionResult> OnPostDeleteAsync(int id)
         {
             var client = _httpClientFactory.CreateClient("BackendClient");
-            var token = Request.Cookies["AuthToken"];
-
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
             
             await client.DeleteAsync($"/api/pdfupload/{id}");
             return RedirectToPage();
@@ -155,12 +139,7 @@ namespace OCR_Frontend.Pages
         public async Task<IActionResult> OnPostDownloadAsync(int id)
         {
              var client = _httpClientFactory.CreateClient("BackendClient");
-             var token = Request.Cookies["AuthToken"];
-
-             if (!string.IsNullOrEmpty(token))
-             {
-                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-             }
+             OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
              var response = await client.GetAsync($"/api/pdfupload/{id}/download");
              

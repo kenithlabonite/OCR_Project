@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Project_OLMS.Data;
 using Project_OLMS.Models;
@@ -8,6 +9,7 @@ using Project_OLMS.Services;
 namespace Project_OLMS.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class PdfUploadController(
         AppDbContext context,
@@ -53,13 +55,9 @@ namespace Project_OLMS.Controllers
                     return BadRequest(new { message = $"File '{file.FileName}' exceeds the maximum allowed size of {MaxFileSizeBytes / (1024 * 1024)} MB." });
             }
 
-            // ── Validate optional UserId exists if supplied ───────────────
-            if (!string.IsNullOrWhiteSpace(metadata.UploadedByUserId))
-            {
-                bool userExists = await context.Users.AnyAsync(u => u.Id == metadata.UploadedByUserId);
-                if (!userExists)
-                    return BadRequest(new { message = $"User with Id '{metadata.UploadedByUserId}' does not exist." });
-            }
+            var currentUserId = GetCurrentUserId();
+            if (string.IsNullOrEmpty(currentUserId))
+                return Unauthorized(new { message = "Authentication required." });
 
             foreach (var file in files)
             {
@@ -75,7 +73,7 @@ namespace Project_OLMS.Controllers
                 string? aiSummary = await geminiService.AnalyzePdfAsync(pdfBytes, file.FileName);
 
                 // ── Persist metadata to database ──────────────────────────────
-                var effectiveUserId = GetCurrentUserId() ?? metadata.UploadedByUserId;
+                var effectiveUserId = currentUserId;
                 var effectiveUsername = GetCurrentUsername();
 
                 var document = new Document
@@ -115,12 +113,24 @@ namespace Project_OLMS.Controllers
         /// Returns a list of distinct batch titles. Documents without a BatchTitle
         /// are grouped under their file name so they still appear in the list.
         /// Each entry includes the title and the IDs of all documents in that group.
+        /// When called by a teacher, returns strictly her/his own uploaded batch titles.
         /// </summary>
         [HttpGet("titles")]
         public async Task<IActionResult> GetTitles()
         {
-            var documents = await context.Documents
-                .AsNoTracking()
+            var query = context.Documents.AsNoTracking();
+
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId))
+                {
+                    return Unauthorized(new { message = "Authentication required." });
+                }
+                query = query.Where(d => d.UploadedByUserId == currentUserId);
+            }
+
+            var documents = await query
                 .OrderByDescending(d => d.UploadedAt)
                 .ToListAsync();
 
@@ -143,12 +153,27 @@ namespace Project_OLMS.Controllers
 
         // ── Get All ───────────────────────────────────────────────────────────
 
-        /// <summary>GET api/pdfupload — returns all uploaded documents.</summary>
+        /// <summary>
+        /// GET api/pdfupload — returns uploaded documents.
+        /// Standard teachers view only their own uploaded documents.
+        /// Administrators view all documents.
+        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var documents = await context.Documents
-                .AsNoTracking()
+            var query = context.Documents.AsNoTracking();
+
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId))
+                {
+                    return Unauthorized(new { message = "Authentication required." });
+                }
+                query = query.Where(d => d.UploadedByUserId == currentUserId);
+            }
+
+            var documents = await query
                 .OrderByDescending(d => d.UploadedAt)
                 .ToListAsync();
 
@@ -168,6 +193,15 @@ namespace Project_OLMS.Controllers
             if (document == null)
                 return NotFound(new { message = $"Document with Id {id} was not found." });
 
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId) || document.UploadedByUserId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Access Denied: You do not have permission to view this document." });
+                }
+            }
+
             return Ok(MapToResponse(document));
         }
 
@@ -183,6 +217,15 @@ namespace Project_OLMS.Controllers
 
             if (document == null)
                 return NotFound(new { message = $"Document with Id {id} was not found." });
+
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId) || document.UploadedByUserId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Access Denied: You do not have permission to download this document." });
+                }
+            }
 
             if (!System.IO.File.Exists(document.StoredFilePath))
                 return NotFound(new { message = "The file could not be found on the server." });
@@ -201,6 +244,15 @@ namespace Project_OLMS.Controllers
 
             if (document == null)
                 return NotFound(new { message = $"Document with Id {id} was not found." });
+
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId) || document.UploadedByUserId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Access Denied: You do not have permission to delete this document." });
+                }
+            }
 
             // Remove physical file
             if (System.IO.File.Exists(document.StoredFilePath))
@@ -331,9 +383,15 @@ namespace Project_OLMS.Controllers
             return false;
         }
 
-        private string? GetCurrentUserId() =>
-            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        private string? GetCurrentUserId()
+        {
+            var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+            if (!string.IsNullOrEmpty(claimId))
+                return claimId;
+
+            return null;
+        }
 
         private string? GetCurrentUsername() =>
             User.FindFirst("username")?.Value;

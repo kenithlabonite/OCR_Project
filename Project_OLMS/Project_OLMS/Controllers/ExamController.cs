@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Project_OLMS.Data;
 using Project_OLMS.Models;
@@ -13,6 +14,7 @@ using QuestPDF.Infrastructure;
 namespace Project_OLMS.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class ExamController(
         AppDbContext context,
@@ -42,6 +44,15 @@ namespace Project_OLMS.Controllers
 
             if (document == null)
                 return NotFound(new { message = $"Document with Id {documentId} was not found." });
+
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId) || document.UploadedByUserId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Access Denied: You do not have permission to generate an exam for this document." });
+                }
+            }
 
             // ── Verify file exists on disk ────────────────────────────────
             if (!System.IO.File.Exists(document.StoredFilePath))
@@ -98,12 +109,23 @@ namespace Project_OLMS.Controllers
             if (string.IsNullOrWhiteSpace(request?.BatchTitle))
                 return BadRequest(new { message = "BatchTitle is required." });
 
-            // Find all documents in this batch
-            var documents = await context.Documents
+            // Find all documents in this batch (scoped to current teacher if not admin)
+            var docQuery = context.Documents
                 .AsNoTracking()
                 .Where(d => (d.BatchTitle != null && d.BatchTitle == request.BatchTitle)
-                            || (d.BatchTitle == null && d.FileName == request.BatchTitle))
-                .ToListAsync();
+                            || (d.BatchTitle == null && d.FileName == request.BatchTitle));
+
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId))
+                {
+                    return Unauthorized(new { message = "Authentication required." });
+                }
+                docQuery = docQuery.Where(d => d.UploadedByUserId == currentUserId);
+            }
+
+            var documents = await docQuery.ToListAsync();
 
             if (documents.Count == 0)
                 return NotFound(new { message = $"No documents found for title '{request.BatchTitle}'." });
@@ -160,14 +182,28 @@ namespace Project_OLMS.Controllers
 
         /// <summary>
         /// GET api/exam
-        /// Returns all exam questionnaires ordered by most recent.
+        /// Returns exam questionnaires ordered by most recent.
+        /// Teachers view only their own generated exams; admins view all.
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var exams = await context.ExamQuestionnaires
+            var examQuery = context.ExamQuestionnaires
                 .AsNoTracking()
                 .Include(e => e.Document)
+                .AsQueryable();
+
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId))
+                {
+                    return Unauthorized(new { message = "Authentication required." });
+                }
+                examQuery = examQuery.Where(e => e.Document != null && e.Document.UploadedByUserId == currentUserId);
+            }
+
+            var exams = await examQuery
                 .OrderByDescending(e => e.GeneratedAt)
                 .ToListAsync();
 
@@ -194,6 +230,15 @@ namespace Project_OLMS.Controllers
             if (exam == null)
                 return NotFound(new { message = $"Exam questionnaire with Id {examId} was not found." });
 
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId) || exam.Document?.UploadedByUserId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Access Denied: You do not have permission to view this exam." });
+                }
+            }
+
             var questions = DeserialiseQuestions(exam.QuestionsJson);
             return Ok(MapToResponse(exam, GetExamTitle(exam.Document), questions));
         }
@@ -214,6 +259,15 @@ namespace Project_OLMS.Controllers
 
             if (exam == null)
                 return NotFound(new { message = $"Exam questionnaire with Id {examId} was not found." });
+
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId) || exam.Document?.UploadedByUserId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Access Denied: You do not have permission to download this exam." });
+                }
+            }
 
             var questions = DeserialiseQuestions(exam.QuestionsJson);
             var documentName = GetExamTitle(exam.Document);
@@ -310,6 +364,15 @@ namespace Project_OLMS.Controllers
 
             if (exam == null)
                 return NotFound(new { message = $"Exam questionnaire with Id {examId} was not found." });
+
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId) || exam.Document?.UploadedByUserId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Access Denied: You do not have permission to download this questionnaire." });
+                }
+            }
 
             var questions = DeserialiseQuestions(exam.QuestionsJson);
             var documentName = GetExamTitle(exam.Document);
@@ -409,6 +472,15 @@ namespace Project_OLMS.Controllers
             if (exam == null)
                 return NotFound(new { message = $"Exam questionnaire with Id {examId} was not found." });
 
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId) || exam.Document?.UploadedByUserId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Access Denied: You do not have permission to download this answer key." });
+                }
+            }
+
             var questions = DeserialiseQuestions(exam.QuestionsJson);
             var documentName = GetExamTitle(exam.Document);
 
@@ -485,9 +557,18 @@ namespace Project_OLMS.Controllers
         public async Task<IActionResult> GetByDocument(int documentId)
         {
             // Verify document exists
-            bool docExists = await context.Documents.AnyAsync(d => d.Id == documentId);
-            if (!docExists)
+            var document = await context.Documents.AsNoTracking().FirstOrDefaultAsync(d => d.Id == documentId);
+            if (document == null)
                 return NotFound(new { message = $"Document with Id {documentId} was not found." });
+
+            if (!IsCurrentUserAdmin())
+            {
+                var currentUserId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(currentUserId) || document.UploadedByUserId != currentUserId)
+                {
+                    return StatusCode(403, new { message = "Access Denied: You do not have permission to view exams for this document." });
+                }
+            }
 
             var exams = await context.ExamQuestionnaires
                 .AsNoTracking()
@@ -542,11 +623,38 @@ namespace Project_OLMS.Controllers
             Questions        = questions
         };
 
-        private string? GetCurrentUserId() =>
-            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+        private string? GetCurrentUserId()
+        {
+            var claimId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+            if (!string.IsNullOrEmpty(claimId))
+                return claimId;
+
+            return null;
+        }
 
         private string? GetCurrentUsername() =>
             User.FindFirst("username")?.Value;
+
+        private bool IsCurrentUserAdmin()
+        {
+            var roleClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                         ?? User.FindFirst("role")?.Value;
+
+            if (string.Equals(roleClaim, "Admin", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var userId = GetCurrentUserId();
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var user = context.Users.AsNoTracking().FirstOrDefault(u => u.Id == userId);
+                if (user != null && string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     }
 }

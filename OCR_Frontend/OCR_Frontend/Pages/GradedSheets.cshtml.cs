@@ -7,22 +7,17 @@ using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.Extensions.Configuration;
 
 namespace OCR_Frontend.Pages
 {
     public class GradedSheetsModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IConfiguration _configuration;
 
-        public GradedSheetsModel(IHttpClientFactory httpClientFactory, IConfiguration configuration)
+        public GradedSheetsModel(IHttpClientFactory httpClientFactory)
         {
             _httpClientFactory = httpClientFactory;
-            _configuration = configuration;
         }
-
-        public string BackendBaseUrl => _configuration["Backend:BaseUrl"] ?? "http://localhost:5296";
 
         public List<GradedSheetDto> GradedSheets { get; set; } = new();
         public List<BatchGroupDto> BatchGroups { get; set; } = new();
@@ -36,15 +31,37 @@ namespace OCR_Frontend.Pages
         public int PassedCount { get; set; }
         public int FailedCount { get; set; }
 
+        public async Task<IActionResult> OnGetImageAsync(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(Request.Cookies["AuthToken"]))
+                return Unauthorized();
+
+            fileName = System.IO.Path.GetFileName(fileName);
+            if (string.IsNullOrWhiteSpace(fileName))
+                return BadRequest();
+
+            var client = _httpClientFactory.CreateClient("BackendClient");
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
+            using var response = await client.GetAsync(
+                $"/api/ocr/images/graded-sheets/{Uri.EscapeDataString(fileName)}");
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                OCR_Frontend.Helpers.AuthCookieHelper.ClearSessionCookies(Response);
+                return Unauthorized();
+            }
+            if (!response.IsSuccessStatusCode)
+                return StatusCode((int)response.StatusCode);
+
+            var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/octet-stream";
+            return File(await response.Content.ReadAsByteArrayAsync(), contentType);
+        }
+
         public async Task OnGetAsync([FromQuery] int? examId)
         {
             SelectedExamId = examId;
             var client = _httpClientFactory.CreateClient("BackendClient");
-            var token = Request.Cookies["AuthToken"];
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
             string endpoint = examId.HasValue ? $"/api/ocr/graded-sheets/{examId.Value}" : "/api/ocr/graded-sheets";
 

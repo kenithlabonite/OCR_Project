@@ -35,11 +35,7 @@ namespace OCR_Frontend.Pages
             DisplayEmail = Request.Cookies["DisplayEmail"] ?? string.Empty;
 
             var client = _httpClientFactory.CreateClient("BackendClient");
-            var token = Request.Cookies["AuthToken"];
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-            }
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
             var response = await client.GetAsync("/api/dashboard");
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {

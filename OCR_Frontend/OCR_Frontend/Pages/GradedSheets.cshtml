@@ -457,9 +457,10 @@
                                     @for (int i = 0; i < sheet.ImageUrls.Count; i++)
                                     {
                                         var imgUrl = sheet.ImageUrls[i];
+                                        var imageUrl = Url.Page("/GradedSheets", "Image", new { fileName = System.IO.Path.GetFileName(imgUrl) });
                                         <div class="text-center">
-                                            <a href="@Model.BackendBaseUrl@imgUrl" target="_blank" title="Click to view full size — Page @(i + 1)">
-                                                <img src="@Model.BackendBaseUrl@imgUrl"
+                                            <a href="@imageUrl" target="_blank" title="Click to view full size — Page @(i + 1)">
+                                                <img src="@imageUrl"
                                                      alt="Answer Sheet Page @(i + 1)"
                                                      class="rounded border shadow-sm"
                                                      style="max-height: 280px; max-width: 200px; object-fit: contain; cursor: zoom-in; transition: transform 0.2s;"

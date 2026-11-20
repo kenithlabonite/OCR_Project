@@ -22,14 +22,11 @@ namespace OCR_Frontend.Pages
             var client = _httpClientFactory.CreateClient("BackendClient");
             var token = Request.Cookies["AuthToken"];
 
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
-            else
+            if (string.IsNullOrEmpty(token))
             {
                 return RedirectToPage("/Login");
             }
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
             var response = await client.GetAsync("/api/exam");
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -53,12 +50,7 @@ namespace OCR_Frontend.Pages
         public async Task<IActionResult> OnPostDownloadPdfAsync(int id)
         {
              var client = _httpClientFactory.CreateClient("BackendClient");
-             var token = Request.Cookies["AuthToken"];
-
-             if (!string.IsNullOrEmpty(token))
-             {
-                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-             }
+             OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
              var response = await client.GetAsync($"/api/exam/{id}/download-pdf");
              
@@ -80,12 +72,7 @@ namespace OCR_Frontend.Pages
         public async Task<IActionResult> OnPostDownloadQuestionsPdfAsync(int id)
         {
              var client = _httpClientFactory.CreateClient("BackendClient");
-             var token = Request.Cookies["AuthToken"];
-
-             if (!string.IsNullOrEmpty(token))
-             {
-                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-             }
+             OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
              var response = await client.GetAsync($"/api/exam/{id}/download-questions-pdf");
              
@@ -107,12 +94,7 @@ namespace OCR_Frontend.Pages
         public async Task<IActionResult> OnPostDownloadAnswersPdfAsync(int id)
         {
              var client = _httpClientFactory.CreateClient("BackendClient");
-             var token = Request.Cookies["AuthToken"];
-
-             if (!string.IsNullOrEmpty(token))
-             {
-                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-             }
+             OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
              var response = await client.GetAsync($"/api/exam/{id}/download-answers-pdf");
              

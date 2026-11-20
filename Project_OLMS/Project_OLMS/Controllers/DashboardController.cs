@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Project_OLMS.Data;
@@ -5,6 +6,7 @@ using Project_OLMS.Data;
 namespace Project_OLMS.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class DashboardController(AppDbContext context) : ControllerBase
     {
@@ -15,12 +17,27 @@ namespace Project_OLMS.Controllers
         [HttpGet]
         public async Task<IActionResult> GetStats()
         {
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+            bool isAdmin = User.IsInRole("Admin");
+
+            if (!isAdmin && string.IsNullOrEmpty(userId))
+                return Unauthorized(new { message = "Authentication required." });
+
+            var documentsQuery = context.Documents.AsNoTracking();
+            var examsQuery = context.ExamQuestionnaires.AsNoTracking();
+
+            if (!isAdmin)
+            {
+                documentsQuery = documentsQuery.Where(d => d.UploadedByUserId == userId);
+                examsQuery = examsQuery.Where(e => e.Document != null && e.Document.UploadedByUserId == userId);
+            }
+
             // Total uploaded PDF documents
-            int totalDocuments = await context.Documents.CountAsync();
+            int totalDocuments = await documentsQuery.CountAsync();
 
             // Total distinct batch topics
-            var docTitles = await context.Documents
-                .AsNoTracking()
+            var docTitles = await documentsQuery
                 .Select(d => new { d.BatchTitle, d.FileName })
                 .ToListAsync();
 
@@ -30,10 +47,17 @@ namespace Project_OLMS.Controllers
                 .Count();
 
             // Total graded answer sheets
-            int totalGradedSheets = await context.GradedAnswerSheets.CountAsync();
+            var gradedSheetsQuery = context.GradedAnswerSheets.AsNoTracking();
+            if (!isAdmin)
+            {
+                gradedSheetsQuery = gradedSheetsQuery.Where(g =>
+                    g.Exam != null && g.Exam.Document != null &&
+                    g.Exam.Document.UploadedByUserId == userId);
+            }
+            int totalGradedSheets = await gradedSheetsQuery.CountAsync();
 
             // Total AI-generated exam questionnaires
-            int totalExams = await context.ExamQuestionnaires.CountAsync();
+            int totalExams = await examsQuery.CountAsync();
 
             return Ok(new
             {

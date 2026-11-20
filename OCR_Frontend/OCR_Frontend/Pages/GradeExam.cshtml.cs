@@ -69,11 +69,7 @@ namespace OCR_Frontend.Pages
             }
 
             var client = _httpClientFactory.CreateClient("BackendClient");
-            var token = Request.Cookies["AuthToken"];
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
             using var content = new MultipartFormDataContent();
             var openStreams = new List<Stream>();
@@ -117,11 +113,7 @@ namespace OCR_Frontend.Pages
         private async Task LoadExamAsync(int examId)
         {
             var client = _httpClientFactory.CreateClient("BackendClient");
-            var token = Request.Cookies["AuthToken"];
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
             var response = await client.GetAsync($"/api/exam/{examId}");
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)

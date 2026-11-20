@@ -37,10 +37,9 @@ namespace OCR_Frontend.Pages
             var client = _httpClientFactory.CreateClient("BackendClient");
             var token  = Request.Cookies["AuthToken"];
 
-            if (!string.IsNullOrEmpty(token))
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            else
+            if (string.IsNullOrEmpty(token))
                 return RedirectToPage("/Login");
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
             var response = await client.GetAsync("/api/pdfupload/titles");
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
@@ -75,10 +74,9 @@ namespace OCR_Frontend.Pages
             var client = _httpClientFactory.CreateClient("BackendClient");
             var token  = Request.Cookies["AuthToken"];
 
-            if (!string.IsNullOrEmpty(token))
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            else
+            if (string.IsNullOrEmpty(token))
                 return RedirectToPage("/Login");
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
             // Reload titles in case we return to page on failure
             var titlesResponse = await client.GetAsync("/api/pdfupload/titles");

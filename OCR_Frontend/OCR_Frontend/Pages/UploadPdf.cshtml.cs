@@ -81,14 +81,8 @@ namespace OCR_Frontend.Pages
             {
                 content.Add(new StringContent(BatchTitle), "BatchTitle");
             }
-            var userId = Request.Cookies["UserId"];
-            if (!string.IsNullOrEmpty(userId))
-            {
-                content.Add(new StringContent(userId), "UploadedByUserId");
-            }
-            
-            // Add Auth token
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            // Add Auth headers
+            OCR_Frontend.Helpers.AuthCookieHelper.AttachAuthHeaders(client, Request);
 
             var response = await client.PostAsync("/api/pdfupload", content);
 

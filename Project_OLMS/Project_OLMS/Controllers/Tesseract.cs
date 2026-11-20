@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Project_OLMS.Data;
 using Project_OLMS.Models;
@@ -12,6 +13,7 @@ using Project_OLMS.Services;
 namespace Project_OLMS.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/[controller]")]
     public class OcrController(AppDbContext context, IGeminiService geminiService, IAuditLogService auditLogService, IWebHostEnvironment env) : ControllerBase
     {
@@ -37,10 +39,14 @@ namespace Project_OLMS.Controllers
             // 1. Fetch the exam to get answer keys
             var exam = await context.ExamQuestionnaires
                 .AsNoTracking()
+                .Include(e => e.Document)
                 .FirstOrDefaultAsync(e => e.Id == examId);
 
             if (exam == null)
                 return NotFound(new { message = $"Exam questionnaire with Id {examId} was not found." });
+
+            if (!CanAccessDocument(exam.Document))
+                return Forbid();
 
             var correctQuestions = JsonSerializer.Deserialize<List<QuestionItem>>(exam.QuestionsJson, _jsonOptions) ?? new();
             if (correctQuestions.Count == 0)
@@ -240,8 +246,19 @@ namespace Project_OLMS.Controllers
         [HttpGet("graded-sheets")]
         public async Task<IActionResult> GetAllGradedSheets()
         {
-            var sheets = await context.GradedAnswerSheets
-                .AsNoTracking()
+            var sheetsQuery = context.GradedAnswerSheets.AsNoTracking();
+            if (!User.IsInRole("Admin"))
+            {
+                var userId = GetCurrentUserId();
+                if (string.IsNullOrEmpty(userId))
+                    return Unauthorized(new { message = "Authentication required." });
+
+                sheetsQuery = sheetsQuery.Where(g =>
+                    g.Exam != null && g.Exam.Document != null &&
+                    g.Exam.Document.UploadedByUserId == userId);
+            }
+
+            var sheets = await sheetsQuery
                 .Include(g => g.Exam)
                     .ThenInclude(e => e!.Document)
                 .OrderByDescending(g => g.GradedAt)
@@ -283,6 +300,9 @@ namespace Project_OLMS.Controllers
             if (exam == null)
                 return NotFound(new { message = $"Exam questionnaire with Id {examId} was not found." });
 
+            if (!CanAccessDocument(exam.Document))
+                return Forbid();
+
             var sheets = await context.GradedAnswerSheets
                 .AsNoTracking()
                 .Where(g => g.ExamId == examId)
@@ -319,6 +339,19 @@ namespace Project_OLMS.Controllers
         {
             // Sanitize to prevent path traversal
             fileName = Path.GetFileName(fileName);
+            var matchingSheets = context.GradedAnswerSheets
+                .AsNoTracking()
+                .Where(g => g.ImagePathsJson != null && g.ImagePathsJson.Contains(fileName))
+                .Include(g => g.Exam)
+                    .ThenInclude(e => e!.Document)
+                .ToList();
+            var sheet = matchingSheets.FirstOrDefault(g => HasImageFile(g.ImagePathsJson, fileName));
+            if (sheet == null)
+                return NotFound(new { message = "Image not found." });
+
+            if (!CanAccessDocument(sheet.Exam?.Document))
+                return Forbid();
+
             string filePath = Path.Combine(env.ContentRootPath, "uploads", "graded-sheets", fileName);
 
             if (!System.IO.File.Exists(filePath))
@@ -353,6 +386,35 @@ namespace Project_OLMS.Controllers
             catch
             {
                 return new();
+            }
+        }
+
+        private string? GetCurrentUserId() =>
+            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+
+        private bool CanAccessDocument(Document? document)
+        {
+            if (User.IsInRole("Admin"))
+                return true;
+
+            var userId = GetCurrentUserId();
+            return !string.IsNullOrEmpty(userId) && document?.UploadedByUserId == userId;
+        }
+
+        private static bool HasImageFile(string? imagePathsJson, string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(imagePathsJson))
+                return false;
+
+            try
+            {
+                var paths = JsonSerializer.Deserialize<List<string>>(imagePathsJson, _jsonOptions) ?? new();
+                return paths.Any(path => string.Equals(Path.GetFileName(path), fileName, StringComparison.Ordinal));
+            }
+            catch (JsonException)
+            {
+                return false;
             }
         }
     }

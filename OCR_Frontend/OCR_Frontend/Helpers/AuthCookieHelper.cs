@@ -53,5 +53,17 @@ namespace OCR_Frontend.Helpers
             response.Cookies.Delete(FrontendInstanceIdCookie, expiredOptions);
             response.Cookies.Delete(BackendInstanceIdCookie, expiredOptions);
         }
+
+        /// <summary>
+        /// Attaches the authenticated user's bearer token to outgoing backend requests.
+        /// </summary>
+        public static void AttachAuthHeaders(System.Net.Http.HttpClient client, HttpRequest request)
+        {
+            var token = request.Cookies[AuthTokenCookie];
+            if (!string.IsNullOrEmpty(token))
+            {
+                client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+            }
+        }
     }
 }
