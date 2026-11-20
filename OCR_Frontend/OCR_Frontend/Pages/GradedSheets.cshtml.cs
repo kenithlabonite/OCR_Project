@@ -49,6 +49,12 @@ namespace OCR_Frontend.Pages
             try
             {
                 var response = await client.GetAsync(endpoint);
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    OCR_Frontend.Helpers.AuthCookieHelper.ClearSessionCookies(Response);
+                    Response.Redirect("/Login");
+                    return;
+                }
                 if (response.IsSuccessStatusCode)
                 {
                     GradedSheets = await response.Content.ReadFromJsonAsync<List<GradedSheetDto>>() ?? new();

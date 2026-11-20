@@ -124,6 +124,12 @@ namespace OCR_Frontend.Pages
             }
 
             var response = await client.GetAsync($"/api/exam/{examId}");
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                OCR_Frontend.Helpers.AuthCookieHelper.ClearSessionCookies(Response);
+                Response.Redirect("/Login");
+                return;
+            }
             if (response.IsSuccessStatusCode)
             {
                 Exam = await response.Content.ReadFromJsonAsync<ExamDto>();

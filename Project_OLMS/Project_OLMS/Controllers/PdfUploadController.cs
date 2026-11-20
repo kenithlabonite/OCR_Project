@@ -15,8 +15,8 @@ namespace Project_OLMS.Controllers
         IGeminiService geminiService,
         IAuditLogService auditLogService) : ControllerBase
     {
-        // Maximum allowed file size: 20 MB
-        private const long MaxFileSizeBytes = 20 * 1024 * 1024;
+        // Maximum allowed file size: 100 MB
+        private const long MaxFileSizeBytes = 100 * 1024 * 1024;
 
         // ── Upload ────────────────────────────────────────────────────────────
 
@@ -75,6 +75,9 @@ namespace Project_OLMS.Controllers
                 string? aiSummary = await geminiService.AnalyzePdfAsync(pdfBytes, file.FileName);
 
                 // ── Persist metadata to database ──────────────────────────────
+                var effectiveUserId = GetCurrentUserId() ?? metadata.UploadedByUserId;
+                var effectiveUsername = GetCurrentUsername();
+
                 var document = new Document
                 {
                     FileName           = file.FileName,
@@ -84,7 +87,7 @@ namespace Project_OLMS.Controllers
                     Description        = metadata.Description,
                     BatchTitle         = metadata.BatchTitle,
                     AiSummary          = aiSummary,
-                    UploadedByUserId   = metadata.UploadedByUserId,
+                    UploadedByUserId   = effectiveUserId,
                     UploadedAt         = DateTime.UtcNow
                 };
 
@@ -94,7 +97,8 @@ namespace Project_OLMS.Controllers
                 await auditLogService.LogDocumentExamAsync(
                     action: "PDF Uploaded",
                     details: $"Uploaded document '{file.FileName}' ({(file.Length / 1024.0):F1} KB, ID: {document.Id})",
-                    userId: metadata.UploadedByUserId,
+                    userId: effectiveUserId,
+                    username: effectiveUsername,
                     ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
                 );
 
@@ -211,6 +215,8 @@ namespace Project_OLMS.Controllers
             await auditLogService.LogDocumentExamAsync(
                 action: "PDF Deleted",
                 details: $"Deleted document '{fileName}' (ID: {docId})",
+                userId: GetCurrentUserId(),
+                username: GetCurrentUsername(),
                 ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
             );
 
@@ -218,6 +224,13 @@ namespace Project_OLMS.Controllers
         }
 
         // ── Private Helpers ───────────────────────────────────────────────────
+
+        private string? GetCurrentUserId() =>
+            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+
+        private string? GetCurrentUsername() =>
+            User.FindFirst("username")?.Value;
 
         /// <summary>
         /// Saves the uploaded form-file to wwwroot/uploads/pdfs/ and returns

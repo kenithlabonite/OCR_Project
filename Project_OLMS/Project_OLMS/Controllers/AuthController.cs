@@ -218,12 +218,13 @@ namespace Project_OLMS.Controllers
 
             return Ok(new
             {
-                id           = user.Id,
-                username     = user.Username,
-                email        = user.Email,
-                role         = user.Role,
-                token        = jwtToken,
-                refreshToken = newRefreshToken
+                id               = user.Id,
+                username         = user.Username,
+                email            = user.Email,
+                role             = user.Role,
+                token            = jwtToken,
+                refreshToken     = newRefreshToken,
+                systemInstanceId = SystemSessionService.SystemInstanceId
             });
         }
 
@@ -393,6 +394,35 @@ namespace Project_OLMS.Controllers
             });
         }
 
+        // ==========================================
+        // SYSTEM RUNTIME & SESSION STATUS ENDPOINTS
+        // ==========================================
+
+        [HttpGet("system-status")]
+        public IActionResult GetSystemStatus()
+        {
+            return Ok(new
+            {
+                systemInstanceId = SystemSessionService.SystemInstanceId,
+                systemStartTimeUtc = SystemSessionService.SystemStartTimeUtc,
+                status = "Running"
+            });
+        }
+
+        [Microsoft.AspNetCore.Authorization.Authorize]
+        [HttpGet("validate-session")]
+        public IActionResult ValidateSession()
+        {
+            return Ok(new
+            {
+                valid = true,
+                systemInstanceId = SystemSessionService.SystemInstanceId,
+                userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                      ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value,
+                username = User.FindFirst("username")?.Value
+            });
+        }
+
         private static string GenerateRefreshToken()
         {
             var randomNumber = new byte[64];
@@ -408,17 +438,19 @@ namespace Project_OLMS.Controllers
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email),
                 new Claim("username", user.Username),
-                new Claim(ClaimTypes.Role, user.Role ?? "User")
+                new Claim(ClaimTypes.Role, user.Role ?? "User"),
+                new Claim("system_instance_id", SystemSessionService.SystemInstanceId)
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+            // Daily session: 24 hours valid while system is running
             var token = new JwtSecurityToken(
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(2),
+                expires: DateTime.UtcNow.AddHours(24),
                 signingCredentials: creds);
 
             return new JwtSecurityTokenHandler().WriteToken(token);

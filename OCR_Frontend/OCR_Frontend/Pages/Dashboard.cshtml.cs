@@ -15,9 +15,13 @@ namespace OCR_Frontend.Pages
         }
 
         // Stats properties
+        public int TotalDocuments { get; set; }
+        public int TotalTopics { get; set; }
+        public int TotalGradedSheets { get; set; }
+        public int TotalExams { get; set; }
+
+        // Backward compatibility
         public int TotalProcessed { get; set; }
-        public double SuccessRate { get; set; }
-        public int FailedJobs { get; set; }
         public int CreditsUsed { get; set; }
 
         // Session display
@@ -37,24 +41,34 @@ namespace OCR_Frontend.Pages
                 client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
             }
             var response = await client.GetAsync("/api/dashboard");
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                OCR_Frontend.Helpers.AuthCookieHelper.ClearSessionCookies(Response);
+                Response.Redirect("/Login");
+                return;
+            }
             if (response.IsSuccessStatusCode)
             {
                 var stats = await response.Content.ReadFromJsonAsync<DashboardStats>();
                 if (stats != null)
                 {
-                    TotalProcessed = stats.TotalProcessed;
-                    SuccessRate    = stats.SuccessRate;
-                    FailedJobs     = stats.FailedJobs;
-                    CreditsUsed    = stats.CreditsUsed;
+                    TotalDocuments    = stats.TotalDocuments != 0 ? stats.TotalDocuments : stats.TotalProcessed;
+                    TotalTopics       = stats.TotalTopics;
+                    TotalGradedSheets = stats.TotalGradedSheets;
+                    TotalExams        = stats.TotalExams != 0 ? stats.TotalExams : stats.CreditsUsed;
+                    TotalProcessed    = TotalDocuments;
+                    CreditsUsed       = TotalExams;
                 }
             }
         }
 
         private class DashboardStats
         {
+            public int TotalDocuments { get; set; }
+            public int TotalTopics { get; set; }
+            public int TotalGradedSheets { get; set; }
+            public int TotalExams { get; set; }
             public int TotalProcessed { get; set; }
-            public double SuccessRate { get; set; }
-            public int FailedJobs { get; set; }
             public int CreditsUsed { get; set; }
         }
     }

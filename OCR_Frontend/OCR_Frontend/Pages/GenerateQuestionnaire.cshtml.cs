@@ -19,15 +19,21 @@ namespace OCR_Frontend.Pages
         /// <summary>Distinct batch titles (each title may represent many PDFs).</summary>
         public List<BatchTitleDto> BatchTitles { get; set; } = new();
 
-        [BindProperty]
+        [BindProperty(SupportsGet = true)]
         public string SelectedBatchTitle { get; set; } = string.Empty;
 
         public string? SuccessMessage { get; set; }
         public string? ErrorMessage { get; set; }
         public bool IsGenerating { get; set; } = false;
 
-        public async Task<IActionResult> OnGetAsync()
+        public async Task<IActionResult> OnGetAsync([FromQuery] string? topic = null, [FromQuery] string? SelectedBatchTitle = null)
         {
+            string? suggestedTopic = !string.IsNullOrWhiteSpace(topic) ? topic : SelectedBatchTitle;
+            if (!string.IsNullOrWhiteSpace(suggestedTopic))
+            {
+                this.SelectedBatchTitle = suggestedTopic.Trim();
+            }
+
             var client = _httpClientFactory.CreateClient("BackendClient");
             var token  = Request.Cookies["AuthToken"];
 
@@ -37,10 +43,29 @@ namespace OCR_Frontend.Pages
                 return RedirectToPage("/Login");
 
             var response = await client.GetAsync("/api/pdfupload/titles");
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                OCR_Frontend.Helpers.AuthCookieHelper.ClearSessionCookies(Response);
+                return RedirectToPage("/Login");
+            }
             if (response.IsSuccessStatusCode)
+            {
                 BatchTitles = await response.Content.ReadFromJsonAsync<List<BatchTitleDto>>() ?? new();
+
+                // If a topic was pre-selected, ensure exact casing matches the option in BatchTitles
+                if (!string.IsNullOrWhiteSpace(SelectedBatchTitle) && BatchTitles.Any())
+                {
+                    var matching = BatchTitles.FirstOrDefault(b => string.Equals(b.Title, SelectedBatchTitle, StringComparison.OrdinalIgnoreCase));
+                    if (matching != null)
+                    {
+                        SelectedBatchTitle = matching.Title;
+                    }
+                }
+            }
             else
+            {
                 ErrorMessage = "Failed to load uploaded PDF topics.";
+            }
 
             return Page();
         }
@@ -74,19 +99,34 @@ namespace OCR_Frontend.Pages
                 Encoding.UTF8,
                 "application/json");
 
-            var response = await client.PostAsync("/api/exam/generate-by-title", jsonContent);
-
-            IsGenerating = false;
-
-            if (response.IsSuccessStatusCode)
+            try
             {
-                SuccessMessage = "Questionnaire generated successfully!";
-                return RedirectToPage("/Questionnaires");
+                var response = await client.PostAsync("/api/exam/generate-by-title", jsonContent);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    SuccessMessage = "Questionnaire generated successfully!";
+                    return RedirectToPage("/Questionnaires");
+                }
+                else
+                {
+                    ErrorMessage = await OCR_Frontend.Helpers.ApiErrorHelper.ExtractErrorMessageAsync(response, "Failed to generate questionnaire. Please try again.");
+                    return Page();
+                }
             }
-            else
+            catch (TaskCanceledException)
             {
-                ErrorMessage = await OCR_Frontend.Helpers.ApiErrorHelper.ExtractErrorMessageAsync(response, "Failed to generate questionnaire. Please try again.");
+                ErrorMessage = "The exam generation request took longer than expected and timed out. Multi-PDF batch analysis can take several minutes. Please check the Questionnaires page to see if it finished, or try generating with fewer documents.";
                 return Page();
+            }
+            catch (Exception ex)
+            {
+                ErrorMessage = $"An unexpected error occurred while generating the questionnaire: {ex.Message}";
+                return Page();
+            }
+            finally
+            {
+                IsGenerating = false;
             }
         }
 

@@ -4,55 +4,223 @@
     ViewData["Title"] = "Upload PDF";
 }
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="glass-panel p-5">
-                <div class="text-center mb-4">
-                    <i class="bi bi-file-earmark-pdf fs-1" style="color: var(--primary-color);"></i>
-                    <h2 class="mt-3">Upload PDF Document</h2>
-                    <p>Upload a PDF document to have it analyzed by NexusOCR.</p>
+<div class="container-fluid px-3 px-md-4 mt-3">
+
+    <!-- Breadcrumb Card -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2 px-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+                    <li class="breadcrumb-item">
+                        <a href="/Dashboard" class="text-decoration-none" style="color: #2563eb;">Dashboard</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="/Documents" class="text-decoration-none" style="color: #2563eb;">Documents</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <span style="font-weight: 600; color: #1e293b;">Upload PDF</span>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Page Header Card -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body px-4 py-3">
+            <div class="d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background-color: #eff6ff;">
+                    <i class="bi bi-cloud-arrow-up-fill" style="color: #2563eb; font-size: 1rem;"></i>
                 </div>
+                <div>
+                    <p class="fw-bold mb-0" style="color: #1e293b; font-size: 1rem;">
+                        Upload Course Materials
+                    </p>
+                    <p class="mb-0" style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em;">
+                        Source PDF Ingestion &middot; AI Topic Analysis
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 0 0 0.375rem 0.375rem;"></div>
+    </div>
 
-                @if (!string.IsNullOrEmpty(Model.SuccessMessage))
-                {
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        @Model.SuccessMessage
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <!-- Detail Split: Form on Left, Guidelines on Right -->
+    <div class="row g-3">
+        <div class="col-md-7">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body px-4 py-3">
+                    <p class="text-uppercase fw-semibold mb-3" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                        <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Document Upload Form
+                    </p>
+
+                    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+                    {
+                        <div class="d-flex align-items-center justify-content-between p-3 rounded mb-3" style="background-color: #f0fdf4; border: 1.5px solid #86efac; color: #16a34a; font-size: 0.82rem;">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi bi-check-circle-fill"></i>
+                                <span>@Model.SuccessMessage</span>
+                            </div>
+                            <a href="/Documents" class="fw-semibold text-decoration-none ms-2" style="color: #16a34a;">View in Library &rarr;</a>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+                    {
+                        <div class="d-flex align-items-center gap-2 p-3 rounded mb-3" style="background-color: #fff1f2; border: 1.5px solid #fda4af; color: #e11d48; font-size: 0.82rem;">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <span>@Model.ErrorMessage</span>
+                        </div>
+                    }
+
+                    <form method="post" enctype="multipart/form-data" id="uploadForm">
+                        <!-- File Input (Sits Outside form-floating) -->
+                        <div class="mb-3">
+                            <label for="PdfFiles" class="form-label" style="font-size: 0.72rem; font-weight: 600; color: #64748b; letter-spacing: 0.04em; text-transform: uppercase;">
+                                <i class="bi bi-file-earmark-pdf me-1"></i> Select PDF File(s)
+                            </label>
+                            <input asp-for="PdfFiles" type="file" id="PdfFiles" class="form-control" accept=".pdf,application/pdf" multiple required style="border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;" onchange="validateFiles(this)" />
+                            <small class="d-block mt-1" style="font-size: 0.75rem; color: #94a3b8;">
+                                Maximum 100 MB per file. Multiple files can be grouped under the same batch title.
+                            </small>
+                            <!-- Client-side file size error -->
+                            <div id="fileSizeError" class="d-none d-flex align-items-center gap-2 p-3 rounded mt-2" style="background-color: #fff1f2; border: 1.5px solid #fda4af; color: #e11d48; font-size: 0.82rem;">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <span id="fileSizeErrorMsg"></span>
+                            </div>
+                        </div>
+
+                        <!-- Batch Title Input -->
+                        <div class="form-floating mb-3">
+                            <input asp-for="BatchTitle" type="text" id="BatchTitle" class="form-control" placeholder="Subject or Quarter Title" autocomplete="off" style="border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;" />
+                            <label for="BatchTitle" style="font-size: 0.82rem; color: #64748b;">
+                                <i class="bi bi-collection-fill me-1"></i> Topic / Batch Title (e.g. "Science 10 - Quarter 1")
+                            </label>
+                        </div>
+
+                        <!-- Description Input -->
+                        <div class="form-floating mb-4">
+                            <textarea asp-for="Description" id="Description" class="form-control" placeholder="Description" style="border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem; height: 90px;"></textarea>
+                            <label for="Description" style="font-size: 0.82rem; color: #64748b;">
+                                <i class="bi bi-chat-left-text-fill me-1"></i> Optional Lesson Description
+                            </label>
+                        </div>
+
+                        <!-- Submit Action -->
+                        <button type="submit" id="submitBtn" class="btn fw-semibold d-inline-flex align-items-center justify-content-center gap-2 w-100 btn-cc-blue" style="background-color: #eff6ff; color: #2563eb; border: 1.5px solid #93c5fd; border-radius: 8px; font-size: 0.82rem; letter-spacing: 0.03em; transition: all 0.2s ease; height: 44px;">
+                            <i class="bi bi-cloud-arrow-up-fill" style="font-size: 0.95rem;"></i> Upload &amp; Analyze Document
+                        </button>
+                    </form>
+                </div>
+                <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 0 0 0.375rem 0.375rem;"></div>
+            </div>
+        </div>
+
+        <!-- Right Side: Guidelines & Specifications -->
+        <div class="col-md-5">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body px-4 py-3">
+                    <p class="text-uppercase fw-semibold mb-3" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                        <i class="bi bi-info-circle-fill me-1"></i> Upload Specifications
+                    </p>
+
+                    <div class="d-flex align-items-center gap-3 py-2 border-bottom" style="border-color: #f1f5f9 !important;">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px; background-color: #eff6ff;">
+                            <i class="bi bi-filetype-pdf" style="color: #2563eb; font-size: 0.85rem;"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0 text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.07em; color: #94a3b8;">Accepted Format</p>
+                            <p class="mb-0 fw-semibold" style="font-size: 0.85rem; color: #1e293b;">PDF documents only (.pdf)</p>
+                        </div>
                     </div>
-                }
-                
-                @if (!string.IsNullOrEmpty(Model.ErrorMessage))
-                {
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        @Model.ErrorMessage
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                }
 
-                <div asp-validation-summary="All" class="text-danger mb-3"></div>
-
-                <form method="post" enctype="multipart/form-data">
-                    <div class="mb-4">
-                        <label class="form-label" asp-for="PdfFiles">Select PDF File(s)</label>
-                        <input asp-for="PdfFiles" type="file" class="form-control" accept=".pdf" multiple required />
+                    <div class="d-flex align-items-center gap-3 py-2 border-bottom" style="border-color: #f1f5f9 !important;">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px; background-color: #fdf4ff;">
+                            <i class="bi bi-magic" style="color: #9333ea; font-size: 0.85rem;"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0 text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.07em; color: #94a3b8;">AI Pipeline</p>
+                            <p class="mb-0 fw-semibold" style="font-size: 0.85rem; color: #1e293b;">Gemini 1.5 Flash content extraction</p>
+                        </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="form-label" asp-for="BatchTitle">Title (Optional, for grouping PDFs)</label>
-                        <input asp-for="BatchTitle" type="text" class="form-control" placeholder="Enter a batch title..." />
+                    <div class="d-flex align-items-center gap-3 py-2 border-bottom" style="border-color: #f1f5f9 !important;">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px; background-color: #f0fdf4;">
+                            <i class="bi bi-collection" style="color: #16a34a; font-size: 0.85rem;"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0 text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.07em; color: #94a3b8;">Batch Grouping</p>
+                            <p class="mb-0 fw-semibold" style="font-size: 0.85rem; color: #1e293b;">Group files under one topic for multi-lesson exams</p>
+                        </div>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="form-label" asp-for="Description">Description (Optional)</label>
-                        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Enter a brief description of the document..."></textarea>
+                    <div class="d-flex align-items-center gap-3 py-2">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 34px; height: 34px; background-color: #fff7ed;">
+                            <i class="bi bi-shield-check" style="color: #c2410c; font-size: 0.85rem;"></i>
+                        </div>
+                        <div>
+                            <p class="mb-0 text-uppercase fw-semibold" style="font-size: 0.65rem; letter-spacing: 0.07em; color: #94a3b8;">Storage &amp; Audit</p>
+                            <p class="mb-0 fw-semibold" style="font-size: 0.85rem; color: #1e293b;">Encrypted disk storage &amp; logged in AuditLogs</p>
+                        </div>
                     </div>
-
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-upload me-2"></i> Upload Document
-                    </button>
-                </form>
+                </div>
+                <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 0 0 0.375rem 0.375rem;"></div>
             </div>
         </div>
     </div>
+
 </div>
+
+<script>
+    const MAX_FILE_SIZE_MB = 100;
+    const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
+    function validateFiles(input) {
+        const errorBox = document.getElementById('fileSizeError');
+        const errorMsg = document.getElementById('fileSizeErrorMsg');
+        const submitBtn = document.getElementById('submitBtn');
+        const oversized = [];
+
+        for (const file of input.files) {
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                oversized.push('"' + file.name + '" (' + sizeMB + ' MB)');
+            }
+        }
+
+        if (oversized.length > 0) {
+            errorMsg.textContent = 'The following file(s) exceed the ' + MAX_FILE_SIZE_MB + ' MB limit and cannot be uploaded: ' + oversized.join(', ') + '. Please reduce the file size or split the document.';
+            errorBox.classList.remove('d-none');
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.5';
+            submitBtn.style.cursor = 'not-allowed';
+        } else {
+            errorBox.classList.add('d-none');
+            errorMsg.textContent = '';
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+        }
+    }
+
+    // Safety net: also block form submission if validation is bypassed
+    document.getElementById('uploadForm').addEventListener('submit', function (e) {
+        const input = document.getElementById('PdfFiles');
+        const oversized = [];
+
+        for (const file of input.files) {
+            if (file.size > MAX_FILE_SIZE_BYTES) {
+                const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                oversized.push('"' + file.name + '" (' + sizeMB + ' MB)');
+            }
+        }
+
+        if (oversized.length > 0) {
+            e.preventDefault();
+            const errorBox = document.getElementById('fileSizeError');
+            const errorMsg = document.getElementById('fileSizeErrorMsg');
+            errorMsg.textContent = 'Upload blocked. The following file(s) exceed the ' + MAX_FILE_SIZE_MB + ' MB limit: ' + oversized.join(', ') + '.';
+            errorBox.classList.remove('d-none');
+        }
+    });
+</script>

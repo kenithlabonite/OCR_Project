@@ -23,9 +23,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
+            ClockSkew = TimeSpan.Zero,
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = context =>
+            {
+                var tokenInstanceId = context.Principal?.FindFirst("system_instance_id")?.Value;
+                if (string.IsNullOrEmpty(tokenInstanceId) || tokenInstanceId != SystemSessionService.SystemInstanceId)
+                {
+                    context.Fail("The system has stopped or restarted since this session was established. Please log in again.");
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 

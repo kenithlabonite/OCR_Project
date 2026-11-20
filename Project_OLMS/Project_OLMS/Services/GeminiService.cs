@@ -45,13 +45,16 @@ namespace Project_OLMS.Services
     public class GeminiService : IGeminiService
     {
         private readonly string _apiKey;
-        private readonly string _modelId;
+        private readonly string _primaryModelId;
         private readonly ILogger<GeminiService> _logger;
-        private const int MaxInlineSizeBytes = 20 * 1024 * 1024;
+        private const int MaxInlineSizeBytes = 100 * 1024 * 1024;
         
         // We use IHttpClientFactory if available, otherwise fallback to a static client for simplicity
         // in this refactor to avoid changing DI registration right now.
-        private static readonly HttpClient _httpClient = new HttpClient();
+        private static readonly HttpClient _httpClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromMinutes(5) // 300 seconds per attempt to accommodate longer Gemini processing
+        };
 
         // Case-insensitive deserialization to tolerate slight field-name variations from the AI
         private static readonly JsonSerializerOptions _jsonOptions = new()
@@ -64,8 +67,8 @@ namespace Project_OLMS.Services
             _logger = logger;
             _apiKey = configuration["Gemini:ApiKey"]
                       ?? throw new InvalidOperationException("Gemini API key is not configured.");
-            _modelId = string.IsNullOrWhiteSpace(configuration["Gemini:Model"]) 
-                       ? "gemini-3.5-flash" 
+            _primaryModelId = string.IsNullOrWhiteSpace(configuration["Gemini:Model"]) 
+                       ? "gemini-3.8-flash" 
                        : configuration["Gemini:Model"]!;
         }
 
@@ -78,8 +81,11 @@ namespace Project_OLMS.Services
 
         private async Task<string?> CallGeminiApiForMultipleImagesAsync(string prompt, List<(byte[] Bytes, string MimeType)> files)
         {
-            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{_modelId}:generateContent?key={_apiKey}";
-            
+            // Build fallback model chain: primary model -> gemini-3.5-flash -> gemini-2.5-flash
+            var candidateModels = new List<string> { _primaryModelId };
+            if (!candidateModels.Contains("gemini-3.5-flash")) candidateModels.Add("gemini-3.5-flash");
+            if (!candidateModels.Contains("gemini-2.5-flash")) candidateModels.Add("gemini-2.5-flash");
+
             var partsList = new List<object>
             {
                 new { text = prompt }
@@ -109,64 +115,95 @@ namespace Project_OLMS.Services
             };
 
             var jsonPayload = JsonSerializer.Serialize(payload);
-            const int maxAttempts = 6;
             var random = new Random();
 
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            foreach (var modelId in candidateModels)
             {
-                string? responseBody = null;
-                try
+                var url = $"https://generativelanguage.googleapis.com/v1beta/models/{modelId}:generateContent?key={_apiKey}";
+                const int maxAttemptsPerModel = 2;
+
+                for (int attempt = 1; attempt <= maxAttemptsPerModel; attempt++)
                 {
-                    using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-                    var response = await _httpClient.PostAsync(url, content);
-                    responseBody = await response.Content.ReadAsStringAsync();
-
-                    if (!response.IsSuccessStatusCode)
+                    string? responseBody = null;
+                    var sw = System.Diagnostics.Stopwatch.StartNew();
+                    try
                     {
-                        var statusCode = response.StatusCode;
-                        _logger.LogWarning("Gemini API returned HTTP {StatusCode} on attempt {Attempt}/{MaxAttempts}.", statusCode, attempt, maxAttempts);
+                        _logger.LogInformation("[GeminiService] Calling Gemini API [{Model}] (attempt {Attempt}/{MaxAttempts}, payload: {Size:F1} KB)...", 
+                            modelId, attempt, maxAttemptsPerModel, jsonPayload.Length / 1024.0);
 
-                        bool isRetryable = statusCode == System.Net.HttpStatusCode.TooManyRequests 
-                                           || ((int)statusCode >= 500 && (int)statusCode <= 599);
+                        using var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                        var response = await _httpClient.PostAsync(url, content);
+                        sw.Stop();
 
-                        if (isRetryable && attempt < maxAttempts)
+                        _logger.LogInformation("[GeminiService] Gemini API [{Model}] responded in {Elapsed:F1}s with HTTP {StatusCode}.", 
+                            modelId, sw.Elapsed.TotalSeconds, response.StatusCode);
+                        responseBody = await response.Content.ReadAsStringAsync();
+
+                        if (!response.IsSuccessStatusCode)
                         {
-                            int delayMs = (int)(Math.Pow(2, attempt) * 1000) + random.Next(0, 1000);
-                            await Task.Delay(delayMs);
-                            continue;
+                            var statusCode = response.StatusCode;
+                            _logger.LogWarning("Gemini API [{Model}] returned HTTP {StatusCode} on attempt {Attempt}/{MaxAttempts}.", 
+                                modelId, statusCode, attempt, maxAttemptsPerModel);
+
+                            bool isRetryable = statusCode == System.Net.HttpStatusCode.TooManyRequests 
+                                               || ((int)statusCode >= 500 && (int)statusCode <= 599);
+
+                            if (isRetryable)
+                            {
+                                if (attempt < maxAttemptsPerModel)
+                                {
+                                    int delayMs = (attempt * 2000) + random.Next(500, 1500);
+                                    _logger.LogInformation("[GeminiService] Transient error {StatusCode} on [{Model}]. Retrying in {DelayMs}ms...", statusCode, modelId, delayMs);
+                                    await Task.Delay(delayMs);
+                                    continue;
+                                }
+                                else
+                                {
+                                    // Exhausted retries for this model, break to try next model in candidateModels
+                                    _logger.LogWarning("[GeminiService] Model [{Model}] exhausted retries due to {StatusCode}. Falling back to next available model...", modelId, statusCode);
+                                    break;
+                                }
+                            }
+
+                            _logger.LogError("Gemini API [{Model}] returned HTTP {StatusCode}: {ErrorBody}", modelId, statusCode, responseBody);
+                            throw new Exception($"Gemini API HTTP Error {statusCode}. View server logs for details.");
                         }
 
-                        _logger.LogError("Gemini API returned HTTP {StatusCode}: {ErrorBody}", statusCode, responseBody);
-                        throw new Exception($"Gemini API HTTP Error {statusCode}. View server logs for details.");
+                        using var jsonDoc = JsonDocument.Parse(responseBody);
+                        try 
+                        {
+                            var text = jsonDoc.RootElement
+                                .GetProperty("candidates")[0]
+                                .GetProperty("content")
+                                .GetProperty("parts")[0]
+                                .GetProperty("text")
+                                .GetString();
+                                
+                            return text?.Trim();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to parse Gemini success response from [{Model}]: {ResponseBody}", modelId, responseBody);
+                            throw new Exception("Could not parse the Gemini API response structure.");
+                        }
                     }
-
-                    using var jsonDoc = JsonDocument.Parse(responseBody);
-                    try 
+                    catch (Exception ex) when (attempt < maxAttemptsPerModel && (ex is HttpRequestException || ex is TaskCanceledException))
                     {
-                        var text = jsonDoc.RootElement
-                            .GetProperty("candidates")[0]
-                            .GetProperty("content")
-                            .GetProperty("parts")[0]
-                            .GetProperty("text")
-                            .GetString();
-                            
-                        return text?.Trim();
+                        sw.Stop();
+                        _logger.LogWarning(ex, "[GeminiService] Request to [{Model}] failed after {Elapsed:F1}s on attempt {Attempt}/{MaxAttempts}: {Msg}", 
+                            modelId, sw.Elapsed.TotalSeconds, attempt, maxAttemptsPerModel, ex.Message);
+                        int delayMs = (attempt * 2000) + random.Next(500, 1500);
+                        await Task.Delay(delayMs);
                     }
-                    catch (Exception ex)
+                    catch (Exception ex) when (attempt >= maxAttemptsPerModel && candidateModels.IndexOf(modelId) < candidateModels.Count - 1 && (ex is HttpRequestException || ex is TaskCanceledException))
                     {
-                        _logger.LogError(ex, "Failed to parse Gemini success response: {ResponseBody}", responseBody);
-                        throw new Exception("Could not parse the Gemini API response structure.");
+                        _logger.LogWarning(ex, "[GeminiService] Model [{Model}] failed. Falling back to next model...", modelId);
+                        break; // Fallback to next candidate model
                     }
-                }
-                catch (Exception ex) when (attempt < maxAttempts && (ex is HttpRequestException || ex is TaskCanceledException))
-                {
-                    _logger.LogWarning(ex, "HTTP request failed on attempt {Attempt}/{MaxAttempts}.", attempt, maxAttempts);
-                    int delayMs = (int)(Math.Pow(2, attempt) * 1000) + random.Next(0, 1000);
-                    await Task.Delay(delayMs);
                 }
             }
 
-            throw new Exception("Gemini API call failed after multiple attempts.");
+            throw new Exception("Gemini API call failed across all candidate models (due to service unavailability or high demand). Please try again in a few moments.");
         }
 
         // ── Existing: PDF Summary ─────────────────────────────────────────────
@@ -174,7 +211,7 @@ namespace Project_OLMS.Services
         public async Task<string?> AnalyzePdfAsync(byte[] pdfBytes, string fileName)
         {
             if (pdfBytes.Length > MaxInlineSizeBytes)
-                return "File is too large for inline AI analysis (> 20 MB).";
+                return "File is too large for inline AI analysis (> 100 MB).";
 
             try
             {
@@ -199,7 +236,7 @@ namespace Project_OLMS.Services
         {
             if (pdfBytes.Length > MaxInlineSizeBytes)
             {
-                string sizeMsg = $"File '{fileName}' exceeds the 20 MB inline limit.";
+                string sizeMsg = $"File '{fileName}' exceeds the 100 MB inline limit.";
                 _logger.LogWarning("[GeminiService] {Msg}", sizeMsg);
                 return (null, sizeMsg);
             }
@@ -438,7 +475,7 @@ namespace Project_OLMS.Services
         {
             if (imageBytes.Length > MaxInlineSizeBytes)
             {
-                return (null, string.Empty, "Image file exceeds maximum allowed size (20 MB).");
+                return (null, string.Empty, "Image file exceeds maximum allowed size (100 MB).");
             }
 
             try
@@ -446,11 +483,14 @@ namespace Project_OLMS.Services
                 string prompt =
                     "You are an automated exam answer sheet scanner and grader AI. " +
                     "An image of a student's answer sheet or questionnaire is attached. " +
-                    "Carefully examine each question item (e.g. 1, 2, 3...) and find the student's handwritten or selected answer letter (A, B, C, or D).\n" +
-                    "Read and follow the instructions provided in the test paper or test questionnaires"+
-                    "Note: Answers are written on blank lines before item numbers (e.g. 'B 1.', 'A 2.', 'b 5.'), " +
-                    "written next to question text, or marked among the options.\n" +
-                    "Return your analysis strictly as a JSON object — no markdown, no code blocks, no prose.\n" +
+                    "Carefully scan the ENTIRE image from top to bottom including page edges, margins, and near page numbers. " +
+                    "Find the student's answer letter (A, B, C, or D) for EVERY question item (1, 2, 3, 4, 5, 6, 7, 8, 9, 10...).\n" +
+                    "CRITICAL RULES FOR FINDING ANSWERS:\n" +
+                    "- Answers are ALWAYS written on the blank line BEFORE the item number (e.g. '_B_ 6.' means question 6 answer is B).\n" +
+                    "- Look at the very bottom and very top of the page — answers near page footers (e.g. 'Page 1 of 2') are still valid.\n" +
+                    "- A question whose text is cut off at the bottom of the page still has its answer written before its number on that same page.\n" +
+                    "- Do NOT skip any question number. If you see a number 1-10, you MUST report its answer (or empty string if truly unreadable).\n" +
+                    "Return ONLY a JSON object — no markdown, no code blocks, no prose.\n" +
                     "JSON Structure:\n" +
                     "{\n" +
                     "  \"answers\": [\n" +
@@ -461,7 +501,7 @@ namespace Project_OLMS.Services
                     "}\n\n" +
                     "Rules:\n" +
                     "1. scannedAnswer MUST be a single uppercase letter: A, B, C, or D.\n" +
-                    "2. If an item has no answer or is unreadable, omit that item or set scannedAnswer to empty string.\n" +
+                    "2. If an item has no answer or is truly unreadable, set scannedAnswer to empty string — do NOT omit the item.\n" +
                     "3. Start your response with { and end with }.";
 
                 _logger.LogInformation("[GeminiService] Sending Vision AI answer sheet scan request...");
@@ -512,6 +552,7 @@ namespace Project_OLMS.Services
                     }
                 }
 
+                // Trust Gemini Vision directly - skip raw-text re-validation which discards valid answers.
                 return (resultDict, rawText, null);
             }
             catch (Exception ex)
@@ -539,10 +580,15 @@ namespace Project_OLMS.Services
                 string prompt =
                     "You are an automated exam answer sheet scanner and grader AI. " +
                     $"Attached are {imageFiles.Count} page image(s) of a student's completed answer sheet / questionnaire. " +
-                    "Carefully examine all attached page images together, read every question item (e.g. 1, 2, 3, 4, 5, 6, 7, 8, 9, 10...) across all pages, and identify the student's handwritten or selected answer letter (A, B, C, or D).\n" +
-                    "Note: Answers are written on blank lines before item numbers (e.g. 'B 1.', 'A 2.', 'b 5.'), " +
-                    "written next to question text, or marked among the options.\n" +
-                    "Return your analysis strictly as a JSON object — no markdown, no code blocks, no prose.\n" +
+                    "Carefully scan ALL pages from top to bottom including page edges, margins, and near page numbers. " +
+                    "Find the student's answer letter (A, B, C, or D) for EVERY question item (1, 2, 3, 4, 5, 6, 7, 8, 9, 10...) across all pages.\n" +
+                    "CRITICAL RULES FOR FINDING ANSWERS:\n" +
+                    "- Answers are ALWAYS written on the blank line BEFORE the item number (e.g. '_B_ 6.' means question 6 answer is B).\n" +
+                    "- Look at the very bottom and very top of EACH page — answers near page footers (e.g. 'Page 1 of 2') are still valid.\n" +
+                    "- A question whose text is cut off at the bottom of one page and continues at the top of the next page still has its answer written before its number on the FIRST page.\n" +
+                    "- Do NOT skip any question number. If you see numbers 1-10, report ALL their answers (or empty string if truly unreadable).\n" +
+                    "- Combine all answers from all pages into one single list.\n" +
+                    "Return ONLY a JSON object — no markdown, no code blocks, no prose.\n" +
                     "JSON Structure:\n" +
                     "{\n" +
                     "  \"answers\": [\n" +
@@ -554,7 +600,7 @@ namespace Project_OLMS.Services
                     "Rules:\n" +
                     "1. scannedAnswer MUST be a single uppercase letter: A, B, C, or D.\n" +
                     "2. Combine all question items from all page images into a single complete answers list.\n" +
-                    "3. If an item has no answer or is unreadable, omit that item or set scannedAnswer to empty string.\n" +
+                    "3. If an item has no answer or is truly unreadable, set scannedAnswer to empty string — do NOT omit the item.\n" +
                     "4. Start your response with { and end with }.";
 
                 _logger.LogInformation("[GeminiService] Sending Vision AI multi-page scan request for {Count} pages...", imageFiles.Count);
@@ -604,6 +650,7 @@ namespace Project_OLMS.Services
                     }
                 }
 
+                // Trust Gemini Vision directly - skip raw-text re-validation which discards valid answers.
                 return (resultDict, rawText, null);
             }
             catch (Exception ex)

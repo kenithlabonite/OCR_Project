@@ -4,161 +4,253 @@
     ViewData["Title"] = "Dashboard Overview";
 }
 
-<div class="container mt-4">
-    <!-- Header/Greeting Banner -->
-    <div class="glass-panel p-4 mb-4 border-0 shadow-sm rounded-4 position-relative overflow-hidden bg-gradient" style="background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(147, 51, 234, 0.1) 100%);">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h1 class="display-6 fw-bold mb-2" style="background: linear-gradient(to right, var(--primary-color), #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Overview & Insights</h1>
-                <p class="text-muted fs-5 mb-0">
-                    @if (!string.IsNullOrEmpty(Model.DisplayName))
-                    {
-                        <span>Welcome back, <strong>@Model.DisplayName</strong>! Analyze your OCR metrics and manage exam answer grading tools here.</span>
-                    }
-                    else
-                    {
-                        <span>Welcome back! Analyze your OCR metrics and manage exam answer grading tools here.</span>
-                    }
-                </p>
-            </div>
-            <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <span class="badge bg-light text-dark border p-2 px-3 rounded-pill d-inline-flex align-items-center gap-2">
-                    <span class="position-relative d-flex">
-                        <span class="rounded-circle bg-success d-inline-block" style="width:9px;height:9px;"></span>
-                        <span class="position-absolute top-0 start-0 rounded-circle bg-success opacity-75 animate-ping" style="width:9px;height:9px;animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></span>
+<div class="container-fluid px-3 px-md-4 mt-3">
+
+    <!-- Page Header Card -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body px-4 py-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background-color: #eff6ff;">
+                        <i class="bi bi-grid-1x2-fill" style="color: #2563eb; font-size: 1rem;"></i>
+                    </div>
+                    <div>
+                        <p class="fw-bold mb-0" style="color: #1e293b; font-size: 1rem;">
+                            Overview &amp; Insights
+                        </p>
+                        <p class="mb-0" style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em;">
+                            @(string.IsNullOrEmpty(Model.DisplayName) ? "Teacher Workspace" : Model.DisplayName) &middot; Optical Exam Evaluation &amp; AI Tools
+                        </p>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <span class="d-inline-flex align-items-center gap-1.5" style="background-color: #f0fdf4; color: #16a34a; border: 1.5px solid #86efac; border-radius: 20px; padding: 4px 12px; font-size: 0.72rem; font-weight: 600;">
+                        <span class="rounded-circle" style="width: 7px; height: 7px; background-color: #16a34a;"></span>
+                        Live Session Active
                     </span>
-                    @if (!string.IsNullOrEmpty(Model.DisplayName))
+                    @if (!string.IsNullOrEmpty(Model.DisplayEmail))
                     {
-                        <span><i class="bi bi-person-fill me-1 text-primary"></i>@Model.DisplayName</span>
+                        <span class="d-none d-md-inline" style="font-size: 0.75rem; color: #64748b;">
+                            <i class="bi bi-envelope me-1"></i>@Model.DisplayEmail
+                        </span>
                     }
-                    else
-                    {
-                        <span><i class="bi bi-clock me-1 text-primary"></i> Live Session Active</span>
-                    }
-                </span>
-                @if (!string.IsNullOrEmpty(Model.DisplayEmail))
-                {
-                    <div class="mt-1"><small class="text-muted"><i class="bi bi-envelope me-1"></i>@Model.DisplayEmail</small></div>
-                }
+                </div>
+            </div>
+        </div>
+        <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 0 0 0.375rem 0.375rem;"></div>
+    </div>
+
+    <!-- Stat Cards Row (4 across, g-3, h-100) -->
+    <div class="row g-3 mb-3">
+        <!-- Graded Sheets -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body px-4 py-3 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between gap-2">
+                            <p class="text-uppercase fw-semibold mb-2" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                                <i class="bi bi-patch-check-fill me-1"></i> Graded Sheets
+                            </p>
+                            <a href="/GradedSheets" class="text-decoration-none" title="Open Graded Sheets" style="color: #94a3b8; font-size: 0.80rem; line-height: 1;">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color: #16a34a; font-size: 2rem;">
+                            @Model.TotalGradedSheets
+                        </h3>
+                    </div>
+                    <div class="mt-2 pt-2" style="border-top: 1px solid #f1f5f9;">
+                        <small style="font-size: 0.75rem; color: #94a3b8;">Evaluated student answer sheets</small>
+                    </div>
+                </div>
+                <div style="height: 3px; background: linear-gradient(90deg, #16a34a, #34d399); border-radius: 0 0 0.375rem 0.375rem;"></div>
+            </div>
+        </div>
+
+        <!-- Source Documents -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body px-4 py-3 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between gap-2">
+                            <p class="text-uppercase fw-semibold mb-2" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                                <i class="bi bi-file-earmark-pdf-fill me-1"></i> Documents
+                            </p>
+                            <a href="/Documents" class="text-decoration-none" title="Open Document Library" style="color: #94a3b8; font-size: 0.80rem; line-height: 1;">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color: #2563eb; font-size: 2rem;">
+                            @Model.TotalDocuments
+                        </h3>
+                    </div>
+                    <div class="mt-2 pt-2" style="border-top: 1px solid #f1f5f9;">
+                        <small style="font-size: 0.75rem; color: #94a3b8;">Uploaded source lesson PDFs</small>
+                    </div>
+                </div>
+                <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 0 0 0.375rem 0.375rem;"></div>
+            </div>
+        </div>
+
+        <!-- Total Topics -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body px-4 py-3 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between gap-2">
+                            <p class="text-uppercase fw-semibold mb-2" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                                <i class="bi bi-collection-fill me-1"></i> Total Topics
+                            </p>
+                            <a href="/UploadPdf" class="text-decoration-none" title="Upload more topics" style="color: #94a3b8; font-size: 0.80rem; line-height: 1;">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color: #c2410c; font-size: 2rem;">
+                            @Model.TotalTopics
+                        </h3>
+                    </div>
+                    <div class="mt-2 pt-2" style="border-top: 1px solid #f1f5f9;">
+                        <small style="font-size: 0.75rem; color: #94a3b8;">Distinct learning units / batches</small>
+                    </div>
+                </div>
+                <div style="height: 3px; background: linear-gradient(90deg, #c2410c, #fb923c); border-radius: 0 0 0.375rem 0.375rem;"></div>
+            </div>
+        </div>
+
+        <!-- Generated Exams -->
+        <div class="col-12 col-sm-6 col-xl-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body px-4 py-3 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex align-items-start justify-content-between gap-2">
+                            <p class="text-uppercase fw-semibold mb-2" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                                <i class="bi bi-magic me-1"></i> Generated Exams
+                            </p>
+                            <a href="/Questionnaires" class="text-decoration-none" title="Open Questionnaires" style="color: #94a3b8; font-size: 0.80rem; line-height: 1;">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                            </a>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color: #9333ea; font-size: 2rem;">
+                            @Model.TotalExams
+                        </h3>
+                    </div>
+                    <div class="mt-2 pt-2" style="border-top: 1px solid #f1f5f9;">
+                        <small style="font-size: 0.75rem; color: #94a3b8;">AI created questionnaires</small>
+                    </div>
+                </div>
+                <div style="height: 3px; background: linear-gradient(90deg, #9333ea, #a78bfa); border-radius: 0 0 0.375rem 0.375rem;"></div>
             </div>
         </div>
     </div>
 
-    <!-- Stats Grid -->
-    <div class="row g-4 mb-5">
-        <!-- Processed Docs -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card glass-panel border-0 shadow-sm h-100 transition-all hover-translate">
-                <div class="card-body p-4 d-flex flex-column justify-content-between">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="text-muted fw-semibold">Processed PDFs</span>
-                        <div class="rounded-circle p-2 bg-primary-subtle text-primary">
-                            <i class="bi bi-file-earmark-pdf-fill fs-4"></i>
-                        </div>
-                    </div>
-                    <div>
-                        <h2 class="display-5 fw-bold mb-1 text-dark">@Model.TotalProcessed</h2>
-                        <span class="text-success small fw-medium"><i class="bi bi-arrow-up-short"></i> Active uploaded sheets</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <!-- Quick Actions & Tools Card -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body px-4 py-3">
+            <p class="text-uppercase fw-semibold mb-3" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                <i class="bi bi-grid-fill me-1"></i> Quick Actions &amp; OCR Tools
+            </p>
 
-        <!-- Success Rate -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card glass-panel border-0 shadow-sm h-100 transition-all hover-translate">
-                <div class="card-body p-4 d-flex flex-column justify-content-between">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="text-muted fw-semibold">OCR Accuracy</span>
-                        <div class="rounded-circle p-2 bg-success-subtle text-success">
-                            <i class="bi bi-check-circle-fill fs-4"></i>
+            <div class="row g-3">
+                <!-- Action 1: Upload Documents -->
+                <div class="col-12 col-md-6 col-xl-4">
+                    <a href="/UploadPdf" class="text-decoration-none d-flex align-items-center justify-content-between p-3 rounded w-100 btn-cc-blue" style="background-color: #eff6ff; border: 1.5px solid #93c5fd; min-height: 68px; transition: all 0.2s ease;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background-color: #dbeafe;">
+                                <i class="bi bi-cloud-arrow-up-fill" style="color: #2563eb; font-size: 1.1rem;"></i>
+                            </div>
+                            <div>
+                                <p class="fw-bold mb-0" style="font-size: 0.85rem; color: #2563eb;">Upload Course Materials</p>
+                                <p class="mb-0" style="font-size: 0.72rem; color: #64748b;">Upload PDF lessons for AI exam generation</p>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <h2 class="display-5 fw-bold mb-1 text-dark">@Model.SuccessRate.ToString("0.0")%</h2>
-                        <span class="text-muted small">Character detection rate</span>
-                    </div>
+                        <i class="bi bi-chevron-right" style="color: #93c5fd;"></i>
+                    </a>
                 </div>
-            </div>
-        </div>
 
-        <!-- Failed Jobs -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card glass-panel border-0 shadow-sm h-100 transition-all hover-translate">
-                <div class="card-body p-4 d-flex flex-column justify-content-between">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="text-muted fw-semibold">Failed Detections</span>
-                        <div class="rounded-circle p-2 bg-danger-subtle text-danger">
-                            <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                <!-- Action 2: Generate Exam -->
+                <div class="col-12 col-md-6 col-xl-4">
+                    <a href="/GenerateQuestionnaire" class="text-decoration-none d-flex align-items-center justify-content-between p-3 rounded w-100 btn-cc-purple" style="background-color: #fdf4ff; border: 1.5px solid #d8b4fe; min-height: 68px; transition: all 0.2s ease;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background-color: #ede9fe;">
+                                <i class="bi bi-magic" style="color: #9333ea; font-size: 1.1rem;"></i>
+                            </div>
+                            <div>
+                                <p class="fw-bold mb-0" style="font-size: 0.85rem; color: #9333ea;">Generate AI Questionnaire</p>
+                                <p class="mb-0" style="font-size: 0.72rem; color: #64748b;">Create 10-item multiple-choice exam</p>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <h2 class="display-5 fw-bold mb-1 text-dark">@Model.FailedJobs</h2>
-                        <span class="text-muted small">Sheets needing manual check</span>
-                    </div>
+                        <i class="bi bi-chevron-right" style="color: #d8b4fe;"></i>
+                    </a>
                 </div>
-            </div>
-        </div>
 
-        <!-- Credits Used -->
-        <div class="col-xl-3 col-md-6">
-            <div class="card glass-panel border-0 shadow-sm h-100 transition-all hover-translate">
-                <div class="card-body p-4 d-flex flex-column justify-content-between">
-                    <div class="d-flex align-items-center justify-content-between mb-3">
-                        <span class="text-muted fw-semibold">Credits Allocated</span>
-                        <div class="rounded-circle p-2 bg-info-subtle text-info">
-                            <i class="bi bi-lightning-charge-fill fs-4"></i>
+                <!-- Action 3: Questionnaires -->
+                <div class="col-12 col-md-6 col-xl-4">
+                    <a href="/Questionnaires" class="text-decoration-none d-flex align-items-center justify-content-between p-3 rounded w-100 btn-cc-purple" style="background-color: #fdf4ff; border: 1.5px solid #d8b4fe; min-height: 68px; transition: all 0.2s ease;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background-color: #ede9fe;">
+                                <i class="bi bi-journal-text" style="color: #9333ea; font-size: 1.1rem;"></i>
+                            </div>
+                            <div>
+                                <p class="fw-bold mb-0" style="font-size: 0.85rem; color: #9333ea;">Exam Questionnaires</p>
+                                <p class="mb-0" style="font-size: 0.72rem; color: #64748b;">Download test papers &amp; answer keys</p>
+                            </div>
                         </div>
-                    </div>
-                    <div>
-                        <h2 class="display-5 fw-bold mb-1 text-dark">@Model.CreditsUsed</h2>
-                        <span class="text-muted small">AI tokens and resource usage</span>
-                    </div>
+                        <i class="bi bi-chevron-right" style="color: #d8b4fe;"></i>
+                    </a>
+                </div>
+
+                <!-- Action 4: Graded Sheets -->
+                <div class="col-12 col-md-6 col-xl-4">
+                    <a href="/GradedSheets" class="text-decoration-none d-flex align-items-center justify-content-between p-3 rounded w-100 btn-cc-green" style="background-color: #f0fdf4; border: 1.5px solid #86efac; min-height: 68px; transition: all 0.2s ease;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background-color: #dcfce7;">
+                                <i class="bi bi-patch-check-fill" style="color: #16a34a; font-size: 1.1rem;"></i>
+                            </div>
+                            <div>
+                                <p class="fw-bold mb-0" style="font-size: 0.85rem; color: #16a34a;">Graded Answer Sheets</p>
+                                <p class="mb-0" style="font-size: 0.72rem; color: #64748b;">Browse class results &amp; OCR scores</p>
+                            </div>
+                        </div>
+                        <i class="bi bi-chevron-right" style="color: #86efac;"></i>
+                    </a>
+                </div>
+
+                <!-- Action 5: My Documents -->
+                <div class="col-12 col-md-6 col-xl-4">
+                    <a href="/Documents" class="text-decoration-none d-flex align-items-center justify-content-between p-3 rounded w-100 btn-cc-blue" style="background-color: #eff6ff; border: 1.5px solid #93c5fd; min-height: 68px; transition: all 0.2s ease;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background-color: #dbeafe;">
+                                <i class="bi bi-folder2-open" style="color: #2563eb; font-size: 1.1rem;"></i>
+                            </div>
+                            <div>
+                                <p class="fw-bold mb-0" style="font-size: 0.85rem; color: #2563eb;">Document Library</p>
+                                <p class="mb-0" style="font-size: 0.72rem; color: #64748b;">Inspect uploaded PDFs &amp; AI summaries</p>
+                            </div>
+                        </div>
+                        <i class="bi bi-chevron-right" style="color: #93c5fd;"></i>
+                    </a>
+                </div>
+
+                <!-- Action 6: Profile / Account -->
+                <div class="col-12 col-md-6 col-xl-4">
+                    <a href="/Profile" class="text-decoration-none d-flex align-items-center justify-content-between p-3 rounded w-100 btn-cc-neutral" style="background-color: #f1f5f9; border: 1.5px solid #e2e8f0; min-height: 68px; transition: all 0.2s ease;">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 38px; height: 38px; background-color: #e2e8f0;">
+                                <i class="bi bi-person-gear" style="color: #475569; font-size: 1.1rem;"></i>
+                            </div>
+                            <div>
+                                <p class="fw-bold mb-0" style="font-size: 0.85rem; color: #475569;">Profile &amp; Credentials</p>
+                                <p class="mb-0" style="font-size: 0.72rem; color: #94a3b8;">Manage contact details and password</p>
+                            </div>
+                        </div>
+                        <i class="bi bi-chevron-right" style="color: #cbd5e1;"></i>
+                    </a>
                 </div>
             </div>
         </div>
+        <!-- Multi-purpose rainbow gradient bar at bottom -->
+        <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #9333ea, #0f766e); border-radius: 0 0 0.375rem 0.375rem;"></div>
     </div>
 
-    <!-- Quick Tools section -->
-    <h3 class="mb-4 fw-bold"><i class="bi bi-grid-fill me-2 text-primary"></i> Quick Actions &amp; OCR Tools</h3>
-    <div class="row g-4">
-        <!-- Card 1: Upload Documents -->
-        <div class="col-md-4">
-            <a href="/UploadPdf" class="d-block text-decoration-none card glass-panel border-0 shadow-sm h-100 p-3 hover-shadow-lg transition-all hover-translate">
-                <div class="card-body text-center py-4">
-                    <div class="bg-primary text-white rounded-4 p-3 d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width:64px; height:64px;">
-                        <i class="bi bi-cloud-arrow-up fs-2"></i>
-                    </div>
-                    <h5 class="text-dark fw-bold mb-2">Upload Test Papers</h5>
-                    <p class="text-muted small mb-0">Upload source textbooks or exam questions in PDF format for AI generation.</p>
-                </div>
-            </a>
-        </div>
-
-        <!-- Card 2: View Document Library -->
-        <div class="col-md-4">
-            <a href="/Documents" class="d-block text-decoration-none card glass-panel border-0 shadow-sm h-100 p-3 hover-shadow-lg transition-all hover-translate">
-                <div class="card-body text-center py-4">
-                    <div class="bg-success text-white rounded-4 p-3 d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width:64px; height:64px;">
-                        <i class="bi bi-folder2-open fs-2"></i>
-                    </div>
-                    <h5 class="text-dark fw-bold mb-2">My Documents</h5>
-                    <p class="text-muted small mb-0">Browse PDF documents, check AI generated summary, or start exam generator.</p>
-                </div>
-            </a>
-        </div>
-
-        <!-- Card 3: Grade Exams -->
-        <div class="col-md-4">
-            <a href="/Questionnaires" class="d-block text-decoration-none card glass-panel border-0 shadow-sm h-100 p-3 hover-shadow-lg transition-all hover-translate">
-                <div class="card-body text-center py-4">
-                    <div class="bg-purple text-white rounded-4 p-3 d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="background-color: #8b5cf6; width:64px; height:64px;">
-                        <i class="bi bi-robot fs-2"></i>
-                    </div>
-                    <h5 class="text-dark fw-bold mb-2">Exams &amp; Answer Grading</h5>
-                    <p class="text-muted small mb-0">Download questionnaire PDFs or grade student answer sheets with OCR scanner.</p>
-                </div>
-            </a>
-        </div>
-    </div>
 </div>

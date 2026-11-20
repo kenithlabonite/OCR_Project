@@ -4,141 +4,221 @@
     ViewData["Title"] = "Grade Student Sheet";
 }
 
-<div class="container mt-5">
-    <nav aria-label="breadcrumb">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a asp-page="/Questionnaires">Questionnaires</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Grade Sheet</li>
-        </ol>
-    </nav>
+<div class="container-fluid px-3 px-md-4 mt-3">
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="bi bi-robot text-primary me-2"></i> Grade Student Sheet</h2>
-            <p class="text-muted">Title: <strong>@Model.Exam?.DocumentFileName</strong></p>
+    <!-- Breadcrumb Card -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2 px-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+                    <li class="breadcrumb-item">
+                        <a href="/Dashboard" class="text-decoration-none" style="color: #2563eb;">Dashboard</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a href="/Questionnaires" class="text-decoration-none" style="color: #2563eb;">Questionnaires</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <span style="font-weight: 600; color: #1e293b;">Grade Sheet</span>
+                    </li>
+                </ol>
+            </nav>
         </div>
+    </div>
+
+    <!-- Page Header Card -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body px-4 py-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background-color: #eff6ff;">
+                        <i class="bi bi-robot" style="color: #2563eb; font-size: 1rem;"></i>
+                    </div>
+                    <div>
+                        <p class="fw-bold mb-0" style="color: #1e293b; font-size: 1rem;">
+                            Grade Student Answer Sheet
+                        </p>
+                        <p class="mb-0" style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em;">
+                            Exam: <span style="color: #2563eb;">@(Model.Exam?.DocumentFileName ?? "Questionnaire")</span> &middot; Gemini Vision AI &amp; Tesseract OCR
+                        </p>
+                    </div>
+                </div>
+
+                <a href="/GradedSheets" class="btn fw-semibold d-inline-flex align-items-center gap-1.5 btn-cc-green" style="background-color: #f0fdf4; color: #16a34a; border: 1.5px solid #86efac; border-radius: 8px; font-size: 0.78rem;">
+                    <i class="bi bi-patch-check-fill"></i> View All Graded Sheets
+                </a>
+            </div>
+        </div>
+        <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 0 0 0.375rem 0.375rem;"></div>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i> @Model.ErrorMessage
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="d-flex align-items-center gap-2 p-3 rounded mb-3" style="background-color: #fff1f2; border: 1.5px solid #fda4af; color: #e11d48; font-size: 0.82rem;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>@Model.ErrorMessage</span>
         </div>
     }
 
-    <div class="row">
-        <!-- Left panel: Upload Form -->
-        <div class="col-lg-4 mb-4">
-            <div class="card glass-panel shadow-sm border-0">
-                <div class="card-body p-4">
-                    <h5 class="card-title mb-3"><i class="bi bi-upload text-primary me-2"></i> Upload Answer Sheet</h5>
-                    <p class="text-muted small">Upload an image (PNG, JPG, or JPEG) of the student's answered test paper. The AI will scan the numbers and option letters (e.g. "1. A", "2. B").</p>
-                    
+    <!-- Detail Split: col-md-5 (Upload Form) / col-md-7 (Results) -->
+    <div class="row g-3">
+        <!-- Left Column: Upload Form & OCR Raw Text -->
+        <div class="col-12 col-lg-5">
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body px-4 py-3">
+                    <p class="text-uppercase fw-semibold mb-3" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                        <i class="bi bi-cloud-arrow-up-fill me-1"></i> Upload Answer Sheet
+                    </p>
+
                     <form method="post" enctype="multipart/form-data">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold" asp-for="StudentName">Student Name <span class="text-muted fw-normal">(optional)</span></label>
-                            <input asp-for="StudentName" type="text" class="form-control" placeholder="e.g. Juan dela Cruz" />
+                        <div class="form-floating mb-3">
+                            <input asp-for="StudentName" type="text" id="StudentName" class="form-control" placeholder="Juan dela Cruz" autocomplete="off" style="border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;" />
+                            <label for="StudentName" style="font-size: 0.82rem; color: #64748b;">
+                                <i class="bi bi-person-fill me-1"></i> Student Name (Optional)
+                            </label>
                         </div>
+
+                        <!-- File Input (Outside form-floating) -->
                         <div class="mb-4">
-                            <label class="form-label fw-semibold" asp-for="StudentAnswerSheets">Select Image(s) (multiple allowed)</label>
-                            <input asp-for="StudentAnswerSheets" type="file" class="form-control" accept="image/*" multiple required />
+                            <label for="StudentAnswerSheets" class="form-label" style="font-size: 0.72rem; font-weight: 600; color: #64748b; letter-spacing: 0.04em; text-transform: uppercase;">
+                                <i class="bi bi-image me-1"></i> Answer Sheet Image(s)
+                            </label>
+                            <input asp-for="StudentAnswerSheets" type="file" id="StudentAnswerSheets" class="form-control" accept="image/*" multiple required style="border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;" />
+                            <small class="d-block mt-1" style="font-size: 0.75rem; color: #94a3b8;">
+                                Supports JPEG, PNG, or camera photos. Multi-page tests are evaluated automatically.
+                            </small>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100 py-2">
-                            <i class="bi bi-cpu me-2"></i> Scan &amp; Grade Sheet
+
+                        <button type="submit" class="btn fw-semibold d-inline-flex align-items-center justify-content-center gap-2 w-100 btn-cc-blue" style="background-color: #eff6ff; color: #2563eb; border: 1.5px solid #93c5fd; border-radius: 8px; font-size: 0.82rem; letter-spacing: 0.03em; transition: all 0.2s ease; height: 44px;">
+                            <i class="bi bi-robot" style="font-size: 0.95rem;"></i> Scan &amp; Evaluate Answers
                         </button>
                     </form>
                 </div>
+                <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 0 0 0.375rem 0.375rem;"></div>
             </div>
 
             @if (Model.GradingResult != null)
             {
-                <div class="card glass-panel shadow-sm border-0 mt-4">
-                    <div class="card-body p-4">
-                        <h5 class="card-title mb-3"><i class="bi bi-file-text text-secondary me-2"></i> Raw OCR Extracted Text</h5>
-                        <pre class="bg-dark text-light p-3 rounded" style="white-space: pre-wrap; font-size: 0.85rem; max-height: 250px; overflow-y: auto;">@Model.GradingResult.RawOcrText</pre>
+                <!-- Raw OCR Text Card -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body px-4 py-3">
+                        <p class="text-uppercase fw-semibold mb-2" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                            <i class="bi bi-code-slash me-1"></i> Raw OCR Extracted Text
+                        </p>
+                        <div class="rounded p-3 font-monospace" style="background-color: #f8fafc; border: 1px dashed #cbd5e1; font-size: 0.78rem; color: #475569; max-height: 240px; overflow-y: auto; white-space: pre-wrap;">
+                            @(string.IsNullOrWhiteSpace(Model.GradingResult.RawOcrText) ? "No raw text detected." : Model.GradingResult.RawOcrText)
+                        </div>
                     </div>
+                    <div style="height: 3px; background: linear-gradient(90deg, #64748b, #94a3b8); border-radius: 0 0 0.375rem 0.375rem;"></div>
                 </div>
             }
         </div>
 
-        <!-- Right panel: Results -->
-        <div class="col-lg-8 mb-4">
+        <!-- Right Column: Results & Itemized Breakdown -->
+        <div class="col-12 col-lg-7">
             @if (Model.GradingResult != null)
             {
-                <!-- Score Card -->
-                <div class="card glass-panel shadow-sm border-0 mb-4 bg-gradient">
-                    <div class="card-body p-4 d-flex align-items-center justify-content-between">
-                        <div>
-                            <h4 class="mb-1 text-primary">Grading Complete!</h4>
-                            @if (!string.IsNullOrEmpty(Model.StudentName))
-                            {
-                                <p class="mb-1"><strong><i class="bi bi-person-fill me-1"></i>@Model.StudentName</strong></p>
-                            }
-                            <p class="text-muted mb-0">Answers compared with the database answer keys. <span class="badge bg-success-subtle text-success">Saved to DB</span></p>
-                        </div>
-                        <div class="text-end">
-                            <div class="d-inline-block bg-primary text-white rounded px-4 py-3 text-center">
-                                <span class="fs-1 fw-bold">@Model.GradingResult.CorrectCount</span>
-                                <span class="fs-5">/ @Model.GradingResult.TotalQuestions</span>
-                                <div class="small">(@Model.GradingResult.ScorePercentage.ToString("0.0")%)</div>
+                var isPassed = Model.GradingResult.ScorePercentage >= 50.0;
+                <!-- Score Summary Card -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body px-4 py-3">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                            <div>
+                                <p class="text-uppercase fw-semibold mb-1" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                                    <i class="bi bi-shield-check me-1"></i> Evaluation Complete
+                                </p>
+                                <h4 class="fw-bold mb-1" style="font-size: 1.15rem; color: #1e293b;">
+                                    @(string.IsNullOrWhiteSpace(Model.StudentName) ? "Anonymous Student" : Model.StudentName)
+                                </h4>
+                                <p class="mb-0 text-muted" style="font-size: 0.75rem;">
+                                    Graded against official answer keys &middot; Stored in database
+                                </p>
+                            </div>
+
+                            <div class="text-end">
+                                <div class="d-inline-flex flex-column align-items-end px-3 py-2 rounded" style="background-color: @(isPassed ? "#f0fdf4" : "#fff1f2"); border: 1.5px solid @(isPassed ? "#86efac" : "#fda4af");">
+                                    <span class="fw-bold" style="font-size: 1.5rem; color: @(isPassed ? "#16a34a" : "#e11d48"); line-height: 1.1;">
+                                        @Model.GradingResult.CorrectCount <span style="font-size: 0.95rem; color: #64748b;">/ @Model.GradingResult.TotalQuestions</span>
+                                    </span>
+                                    <span class="fw-semibold" style="font-size: 0.78rem; color: @(isPassed ? "#16a34a" : "#e11d48");">
+                                        @Model.GradingResult.ScorePercentage.ToString("0.0")% &middot; @(isPassed ? "PASSED" : "NEEDS REVIEW")
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <div style="height: 3px; background: linear-gradient(90deg, @(isPassed ? "#16a34a, #34d399" : "#e11d48, #fda4af")); border-radius: 0 0 0.375rem 0.375rem;"></div>
                 </div>
 
+                <!-- Checked Answers Table Card -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body px-4 py-3">
+                        <p class="text-uppercase fw-semibold mb-3" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                            <i class="bi bi-list-check me-1"></i> Itemized Answers Verification
+                        </p>
 
-                <!-- Checked Answers Table -->
-                <div class="card glass-panel shadow-sm border-0">
-                    <div class="card-body p-4">
-                        <h5 class="card-title mb-3"><i class="bi bi-list-check text-success me-2"></i> Results Breakdown</h5>
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle">
+                            <table class="table table-sm table-hover align-middle mb-0">
                                 <thead>
-                                    <tr>
-                                        <th style="width: 80px;">Q#</th>
-                                        <th>Question / Options</th>
-                                        <th class="text-center" style="width: 120px;">Correct Answer</th>
-                                        <th class="text-center" style="width: 120px;">Student Answer</th>
-                                        <th class="text-center" style="width: 100px;">Result</th>
+                                    <tr style="border-bottom: 2px solid #e2e8f0; background-color: #f8fafc;">
+                                        <th style="font-size: 0.72rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; width: 50px;">#</th>
+                                        <th style="font-size: 0.72rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">Question Details</th>
+                                        <th class="text-center" style="font-size: 0.72rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; width: 90px;">Key</th>
+                                        <th class="text-center" style="font-size: 0.72rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; width: 100px;">Student</th>
+                                        <th class="text-center" style="font-size: 0.72rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; width: 75px;">Result</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var res in Model.GradingResult.Results)
                                     {
                                         var matchedQuestion = Model.Exam?.Questions.FirstOrDefault(q => q.Number == res.QuestionNumber);
-                                        <tr>
-                                            <td><strong>Q @res.QuestionNumber</strong></td>
+                                        <tr style="border-bottom: 1px solid #f1f5f9;">
                                             <td>
-                                                <div>@matchedQuestion?.QuestionText</div>
-                                                <div class="small text-muted mt-1">
-                                                    <strong>A:</strong> @matchedQuestion?.OptionA | 
-                                                    <strong>B:</strong> @matchedQuestion?.OptionB | 
-                                                    <strong>C:</strong> @matchedQuestion?.OptionC | 
-                                                    <strong>D:</strong> @matchedQuestion?.OptionD
+                                                <span class="font-monospace fw-bold" style="color: #1e293b; font-size: 0.82rem;">Q@(res.QuestionNumber)</span>
+                                            </td>
+                                            <td>
+                                                <div style="font-size: 0.82rem; color: #1e293b; font-weight: 500;">
+                                                    @(matchedQuestion?.QuestionText ?? $"Question #{res.QuestionNumber}")
                                                 </div>
+                                                @if (matchedQuestion != null)
+                                                {
+                                                    <div class="small mt-1" style="font-size: 0.72rem; color: #64748b;">
+                                                        A: @matchedQuestion.OptionA &middot; B: @matchedQuestion.OptionB &middot; C: @matchedQuestion.OptionC &middot; D: @matchedQuestion.OptionD
+                                                    </div>
+                                                }
                                             </td>
                                             <td class="text-center">
-                                                <span class="badge bg-success fs-6">@res.CorrectAnswer</span>
+                                                <span class="badge fw-semibold" style="background-color: #f0fdf4; color: #16a34a; border: 1px solid #86efac; font-size: 0.72rem; border-radius: 6px; padding: 2px 8px;">
+                                                    @res.CorrectAnswer
+                                                </span>
                                             </td>
                                             <td class="text-center">
                                                 @if (string.IsNullOrEmpty(res.ScannedAnswer))
                                                 {
-                                                    <span class="badge bg-secondary fs-6" title="Could not recognize or find answer">N/A</span>
+                                                    <span class="badge fw-semibold" style="background-color: #f1f5f9; color: #94a3b8; border: 1.5px dashed #cbd5e1; font-size: 0.70rem; border-radius: 6px; padding: 2px 6px;">
+                                                        BLANK
+                                                    </span>
+                                                }
+                                                else if (res.IsCorrect)
+                                                {
+                                                    <span class="badge fw-semibold" style="background-color: #f0fdf4; color: #16a34a; border: 1.5px solid #86efac; font-size: 0.72rem; border-radius: 6px; padding: 2px 8px;">
+                                                        @res.ScannedAnswer
+                                                    </span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="badge @(res.IsCorrect ? "bg-success" : "bg-danger") fs-6">@res.ScannedAnswer</span>
+                                                    <span class="badge fw-semibold" style="background-color: #fff1f2; color: #e11d48; border: 1.5px solid #fda4af; font-size: 0.72rem; border-radius: 6px; padding: 2px 8px;">
+                                                        @res.ScannedAnswer
+                                                    </span>
                                                 }
                                             </td>
                                             <td class="text-center">
                                                 @if (res.IsCorrect)
                                                 {
-                                                    <span class="text-success fs-4"><i class="bi bi-check-circle-fill"></i></span>
+                                                    <i class="bi bi-check-circle-fill" style="color: #16a34a; font-size: 1rem;"></i>
                                                 }
                                                 else
                                                 {
-                                                    <span class="text-danger fs-4"><i class="bi bi-x-circle-fill"></i></span>
+                                                    <i class="bi bi-x-circle-fill" style="color: #e11d48; font-size: 1rem;"></i>
                                                 }
                                             </td>
                                         </tr>
@@ -147,18 +227,26 @@
                             </table>
                         </div>
                     </div>
+                    <div style="height: 3px; background: linear-gradient(90deg, #16a34a, #34d399); border-radius: 0 0 0.375rem 0.375rem;"></div>
                 </div>
             }
             else
             {
-                <div class="card glass-panel shadow-sm border-0 py-5 text-center text-muted">
-                    <div class="card-body">
-                        <i class="bi bi-robot fs-1 text-primary"></i>
-                        <h4 class="mt-3">Ready to Grade</h4>
-                        <p class="mb-0">Please upload the student's sheet on the left to start OCR grading.</p>
+                <!-- Awaiting Submission State -->
+                <div class="card border-0 shadow-sm mb-3">
+                    <div class="card-body p-4 text-center">
+                        <div class="rounded p-4 text-center mx-auto" style="max-width: 460px; background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px;">
+                            <i class="bi bi-camera" style="font-size: 2.2rem; color: #cbd5e1;"></i>
+                            <p class="mt-2 mb-1 fw-semibold" style="color: #64748b; font-size: 0.88rem;">Ready for Student Answer Sheet</p>
+                            <p class="mb-0" style="color: #94a3b8; font-size: 0.75rem; font-style: italic;">
+                                Choose an image of the student's answered test paper on the left. The OCR engine will detect the answers and compute the score instantly.
+                            </p>
+                        </div>
                     </div>
+                    <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 0 0 0.375rem 0.375rem;"></div>
                 </div>
             }
         </div>
     </div>
+
 </div>

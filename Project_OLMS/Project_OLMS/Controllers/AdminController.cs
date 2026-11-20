@@ -155,7 +155,7 @@ namespace Project_OLMS.Controllers
             await auditLogService.LogUserActivityAsync(
                 action: "User Deleted",
                 details: $"Admin permanently deleted user '{deletedUsername}' (ID: {deletedId}).",
-                userId: deletedId,
+                userId: null,
                 username: deletedUsername,
                 ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
             );

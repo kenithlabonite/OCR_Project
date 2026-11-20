@@ -4,62 +4,64 @@
     ViewData["Title"] = "Register";
 }
 
-<div class="auth-wrapper">
-    <div class="auth-container">
-        <div class="glass-panel p-5">
-            <div class="text-center mb-4">
-                <i class="bi bi-person-plus fs-1" style="color: var(--primary-color);"></i>
-                <h2 class="mt-3">Create an Account</h2>
-                <p>Join NexusOCR today.</p>
+<div class="container py-5 d-flex justify-content-center align-items-center" style="min-height: calc(100vh - 40px);">
+    <div class="col-12 col-sm-10 col-md-8 col-lg-5 col-xl-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body px-4 py-4">
+                <div class="text-center mb-4">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 44px; height: 44px; background-color: #eff6ff; border: 1.5px solid #93c5fd;">
+                        <i class="bi bi-person-plus-fill" style="font-size: 1.25rem; color: #2563eb;"></i>
+                    </div>
+                    <p class="text-uppercase fw-semibold mb-1" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                        REGISTRATION
+                    </p>
+                    <h1 class="fw-bold mb-1" style="font-size: 1.15rem; color: #1e293b;">Create an Account</h1>
+                    <p class="mb-0" style="font-size: 0.82rem; color: #64748b;">Join NexusOCR to generate exams and grade answer sheets</p>
+                </div>
+
+                <div asp-validation-summary="All" class="text-danger small mb-3"></div>
+
+                <form method="post">
+                    <div class="form-floating mb-3">
+                        <input asp-for="Username" type="text" class="form-control" placeholder="johndoe" required />
+                        <label asp-for="Username">Username</label>
+                    </div>
+
+                    <div class="form-floating mb-3">
+                        <input asp-for="Email" type="email" class="form-control" placeholder="name@example.com" required />
+                        <label asp-for="Email">Email Address</label>
+                    </div>
+
+                    <div class="form-floating mb-2">
+                        <input asp-for="Password" type="password" class="form-control" placeholder="••••••••" required />
+                        <label asp-for="Password">Password</label>
+                    </div>
+                    <p class="mb-3" style="font-size: 0.74rem; color: #94a3b8;">
+                        Min 8 characters, at least one capital letter.
+                    </p>
+
+                    <div class="form-floating mb-3">
+                        <input asp-for="ConfirmPassword" type="password" class="form-control" placeholder="••••••••" required />
+                        <label asp-for="ConfirmPassword">Confirm Password</label>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input type="checkbox" class="form-check-input" id="terms" required>
+                        <label class="form-check-label fw-semibold" for="terms" style="font-size: 0.78rem; color: #475569;">
+                            I agree to the <a href="#" class="text-decoration-none" style="color: #2563eb;">Terms of Service</a> and <a href="#" class="text-decoration-none" style="color: #2563eb;">Privacy Policy</a>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="btn w-100 fw-semibold btn-cc-blue mb-3" style="height: 42px; background-color: #eff6ff; border: 1.5px solid #93c5fd; color: #2563eb; border-radius: 8px; font-size: 0.82rem; letter-spacing: 0.03em;">
+                        <i class="bi bi-person-check-fill me-1"></i> Create Account
+                    </button>
+
+                    <div class="text-center" style="font-size: 0.80rem; color: #64748b;">
+                        Already have an account? <a href="/Login" class="text-decoration-none fw-semibold" style="color: #2563eb;">Sign in</a>
+                    </div>
+                </form>
             </div>
-
-            <div asp-validation-summary="All" class="text-danger mb-3"></div>
-
-            <form method="post">
-                <div class="mb-3">
-                    <label class="form-label" asp-for="Username">Username</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-person"></i></span>
-                        <input asp-for="Username" type="text" class="form-control border-start-0 ps-0" placeholder="johndoe" required />
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label" asp-for="Email">Email Address</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-envelope"></i></span>
-                        <input asp-for="Email" type="email" class="form-control border-start-0 ps-0" placeholder="name@example.com" required />
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <label class="form-label" asp-for="Password">Password</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-lock"></i></span>
-                        <input asp-for="Password" type="password" class="form-control border-start-0 ps-0" placeholder="••••••••" required />
-                    </div>
-                    <small class="text-muted">Min 8 characters, at least one capital letter.</small>
-                </div>
-
-                <div class="mb-4">
-                    <label class="form-label" asp-for="ConfirmPassword">Confirm Password</label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-transparent border-end-0 text-muted"><i class="bi bi-lock-fill"></i></span>
-                        <input asp-for="ConfirmPassword" type="password" class="form-control border-start-0 ps-0" placeholder="••••••••" required />
-                    </div>
-                </div>
-                
-                <div class="mb-4 form-check">
-                    <input type="checkbox" class="form-check-input" id="terms" required>
-                    <label class="form-check-label" for="terms">I agree to the <a href="#" style="color: var(--primary-color);">Terms of Service</a> and <a href="#" style="color: var(--primary-color);">Privacy Policy</a></label>
-                </div>
-                
-                <button type="submit" class="btn btn-primary w-100 mb-4">Create Account</button>
-                
-                <div class="text-center text-muted">
-                    Already have an account? <a href="/Login" class="text-decoration-none fw-medium" style="color: var(--primary-color);">Sign in</a>
-                </div>
-            </form>
+            <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 0 0 0.375rem 0.375rem;"></div>
         </div>
     </div>
 </div>

@@ -32,6 +32,11 @@ namespace OCR_Frontend.Pages
             }
 
             var response = await client.GetAsync("/api/pdfupload");
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                OCR_Frontend.Helpers.AuthCookieHelper.ClearSessionCookies(Response);
+                return RedirectToPage("/Login");
+            }
             
             if (response.IsSuccessStatusCode)
             {

@@ -4,136 +4,187 @@
     ViewData["Title"] = "Questionnaires";
 }
 
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-ui-checks" style="color: var(--primary-color);"></i> Exam Questionnaires</h2>
-        <a asp-page="/GradedSheets" class="btn btn-outline-success">
-            <i class="bi bi-file-earmark-check me-1"></i> View Graded Student Sheets
-        </a>
+<div class="container-fluid px-3 px-md-4 mt-3">
+
+    <!-- Breadcrumb Card -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2 px-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+                    <li class="breadcrumb-item">
+                        <a href="/Dashboard" class="text-decoration-none" style="color: #2563eb;">Dashboard</a>
+                    </li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <span style="font-weight: 600; color: #1e293b;">Questionnaires</span>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Page Header Card -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body px-4 py-3">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background-color: #fdf4ff;">
+                        <i class="bi bi-journal-text" style="color: #9333ea; font-size: 1rem;"></i>
+                    </div>
+                    <div>
+                        <p class="fw-bold mb-0" style="color: #1e293b; font-size: 1rem;">
+                            Exam Questionnaires
+                        </p>
+                        <p class="mb-0" style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em;">
+                            Generated Test Questionnaires &middot; QuestPDF Exports
+                        </p>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <a href="/GenerateQuestionnaire" class="btn fw-semibold d-inline-flex align-items-center gap-1.5 btn-cc-purple" style="background-color: #fdf4ff; color: #9333ea; border: 1.5px solid #d8b4fe; border-radius: 8px; font-size: 0.78rem; letter-spacing: 0.03em;">
+                        <i class="bi bi-magic" style="font-size: 0.90rem;"></i> Generate New Exam
+                    </a>
+                    <a href="/GradedSheets" class="btn fw-semibold d-inline-flex align-items-center gap-1.5 btn-cc-green" style="background-color: #f0fdf4; color: #16a34a; border: 1.5px solid #86efac; border-radius: 8px; font-size: 0.78rem; letter-spacing: 0.03em;">
+                        <i class="bi bi-patch-check-fill" style="font-size: 0.90rem;"></i> Graded Sheets
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div style="height: 3px; background: linear-gradient(90deg, #9333ea, #a78bfa); border-radius: 0 0 0.375rem 0.375rem;"></div>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @Model.ErrorMessage
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="d-flex align-items-center gap-2 p-3 rounded mb-3" style="background-color: #fff1f2; border: 1.5px solid #fda4af; color: #e11d48; font-size: 0.82rem;">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>@Model.ErrorMessage</span>
         </div>
     }
 
-    <div class="row">
-        @if (Model.Exams.Any())
+    <!-- Questionnaires List -->
+    @if (Model.Exams.Any())
+    {
+        @foreach (var exam in Model.Exams)
         {
-            @foreach (var exam in Model.Exams)
-            {
-                <div class="col-md-12 mb-4">
-                    <div class="card glass-panel shadow-sm">
-                        <div class="card-header bg-transparent d-flex justify-content-between align-items-center border-0 pt-4 pb-3">
-                            <h5 class="mb-0 fw-bold">
-                                <i class="bi bi-journal-bookmark-fill text-primary me-2"></i> Title: @exam.DocumentFileName
-                            </h5>
-                            <div class="d-flex align-items-center gap-3">
-                                <small class="text-muted">Generated: @exam.GeneratedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</small>
-                                <div class="d-flex gap-2">
-                                    <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseExam-@exam.ExamId" aria-expanded="false" aria-controls="collapseExam-@exam.ExamId">
-                                        <i class="bi bi-eye"></i> View Details
-                                    </button>
-                                    <form method="post" asp-page-handler="DownloadQuestionsPdf">
-                                        <input type="hidden" name="id" value="@exam.ExamId" />
-                                        <button type="submit" class="btn btn-sm btn-outline-primary">
-                                            <i class="bi bi-file-earmark-text"></i> Download Questionnaire
-                                        </button>
-                                    </form>
-                                    <form method="post" asp-page-handler="DownloadAnswersPdf">
-                                        <input type="hidden" name="id" value="@exam.ExamId" />
-                                        <button type="submit" class="btn btn-sm btn-outline-success">
-                                            <i class="bi bi-key"></i> Download Answer Key
-                                        </button>
-                                    </form>
-                                    <a href="/GradeExam?examId=@exam.ExamId" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-robot"></i> Grade Student Sheet
-                                    </a>
-                                </div>
-                            </div>
+            var collapseId = "collapseExam-" + exam.ExamId;
+            <div class="card border-0 shadow-sm mb-3">
+                <div class="card-body px-4 py-3">
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                        <div>
+                            <p class="text-uppercase fw-semibold mb-1" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                                <i class="bi bi-file-earmark-check me-1"></i> Exam #@exam.ExamId
+                            </p>
+                            <h4 class="fw-bold mb-1" style="font-size: 1.15rem; color: #1e293b;">
+                                @exam.DocumentFileName
+                            </h4>
+                            <p class="mb-0 text-muted" style="font-size: 0.75rem;">
+                                Generated @exam.GeneratedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm") &middot; @exam.Questions.Count Questions
+                            </p>
                         </div>
-                        <div class="collapse" id="collapseExam-@exam.ExamId">
-                            <div class="card-body border-top border-light pt-3">
-                                <!-- Nav tabs -->
-                                <ul class="nav nav-pills mb-3" id="pills-tab-@exam.ExamId" role="tablist">
-                                    <li class="nav-item" role="presentation">
-                                        <button class="nav-link active" id="pills-questions-tab-@exam.ExamId" data-bs-toggle="pill" data-bs-target="#pills-questions-@exam.ExamId" type="button" role="tab" aria-controls="pills-questions-@exam.ExamId" aria-selected="true">
-                                            <i class="bi bi-question-circle"></i> Questionnaire
-                                        </button>
-                                    </li>
-                                    <li class="nav-item" role="presentation">
-                                        <button class="nav-link" id="pills-answers-tab-@exam.ExamId" data-bs-toggle="pill" data-bs-target="#pills-answers-@exam.ExamId" type="button" role="tab" aria-controls="pills-answers-@exam.ExamId" aria-selected="false">
-                                            <i class="bi bi-check-circle"></i> Answer Key
-                                        </button>
-                                    </li>
-                                </ul>
-                                
-                                <!-- Tab content -->
-                                <div class="tab-content" id="pills-tabContent-@exam.ExamId">
-                                    <!-- Questionnaire Tab -->
-                                    <div class="tab-pane fade show active" id="pills-questions-@exam.ExamId" role="tabpanel" aria-labelledby="pills-questions-tab-@exam.ExamId">
-                                        <div class="alert alert-warning border-0 shadow-sm mb-3">
-                                            <strong><i class="bi bi-exclamation-triangle"></i> INSTRUCTIONS:</strong>
-                                            <span class="fst-italic">Write your final answer BEFORE the item number for each question (e.g., A 1.). Answers written anywhere else will not be counted.</span>
-                                        </div>
-                                        <div class="list-group list-group-flush">
-                                            @foreach (var q in exam.Questions)
-                                            {
-                                                <div class="list-group-item bg-transparent border-0 px-0 py-3">
-                                                    <h6 class="fw-semibold">_______ @q.Number. @q.QuestionText</h6>
-                                                    <div class="ps-4 mt-2">
-                                                        <div class="form-check mb-1">
-                                                            <label class="form-check-label">A. @q.OptionA</label>
-                                                        </div>
-                                                        <div class="form-check mb-1">
-                                                            <label class="form-check-label">B. @q.OptionB</label>
-                                                        </div>
-                                                        <div class="form-check mb-1">
-                                                            <label class="form-check-label">C. @q.OptionC</label>
-                                                        </div>
-                                                        <div class="form-check mb-1">
-                                                            <label class="form-check-label">D. @q.OptionD</label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            }
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Answer Key Tab -->
-                                    <div class="tab-pane fade" id="pills-answers-@exam.ExamId" role="tabpanel" aria-labelledby="pills-answers-tab-@exam.ExamId">
-                                        <div class="list-group list-group-flush">
-                                            @foreach (var q in exam.Questions)
-                                            {
-                                                <div class="list-group-item bg-transparent border-0 px-0 py-3">
-                                                    <h6 class="fw-bold text-success"><i class="bi bi-check2-circle"></i> Question @q.Number: Option @q.CorrectAnswer</h6>
-                                                    @if (!string.IsNullOrEmpty(q.Explanation))
-                                                    {
-                                                        <p class="text-muted mb-0 ps-4">
-                                                            <span class="fw-semibold text-primary">Explanation:</span> @q.Explanation
-                                                        </p>
-                                                    }
-                                                </div>
-                                            }
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+
+                        <!-- Action buttons stack -->
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <button type="button" class="btn fw-semibold d-inline-flex align-items-center gap-1.5 btn-cc-neutral" data-bs-toggle="collapse" data-bs-target="#@collapseId" aria-expanded="false" style="background-color: #f1f5f9; color: #475569; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.75rem; height: 36px;">
+                                <i class="bi bi-eye"></i> View Questions
+                            </button>
+
+                            <form method="post" asp-page-handler="DownloadQuestionsPdf" class="d-inline">
+                                <input type="hidden" name="id" value="@exam.ExamId" />
+                                <button type="submit" class="btn fw-semibold d-inline-flex align-items-center gap-1.5 btn-cc-purple" title="Download Questionnaire without answers" style="background-color: #fdf4ff; color: #9333ea; border: 1.5px solid #d8b4fe; border-radius: 8px; font-size: 0.75rem; height: 36px;">
+                                    <i class="bi bi-file-earmark-text"></i> Test Paper PDF
+                                </button>
+                            </form>
+
+                            <form method="post" asp-page-handler="DownloadAnswersPdf" class="d-inline">
+                                <input type="hidden" name="id" value="@exam.ExamId" />
+                                <button type="submit" class="btn fw-semibold d-inline-flex align-items-center gap-1.5 btn-cc-green" title="Download Answer Key with explanations" style="background-color: #f0fdf4; color: #16a34a; border: 1.5px solid #86efac; border-radius: 8px; font-size: 0.75rem; height: 36px;">
+                                    <i class="bi bi-key"></i> Answer Key PDF
+                                </button>
+                            </form>
+
+                            <a href="/GradeExam?examId=@exam.ExamId" class="btn fw-semibold d-inline-flex align-items-center gap-1.5 btn-cc-blue" style="background-color: #eff6ff; color: #2563eb; border: 1.5px solid #93c5fd; border-radius: 8px; font-size: 0.75rem; height: 36px;">
+                                <i class="bi bi-robot"></i> Grade Sheet
+                            </a>
                         </div>
                     </div>
                 </div>
-            }
-        }
-        else
-        {
-            <div class="col-12 text-center text-muted py-5 glass-panel">
-                <i class="bi bi-journal-x fs-1"></i>
-                <p class="mt-3">No questionnaires found.</p>
-                <a asp-page="/Documents" class="btn btn-outline-primary mt-2">View Documents</a>
+
+                <!-- Collapsible Details -->
+                <div class="collapse" id="@collapseId">
+                    <hr class="mx-3 my-0" style="border-color: #f1f5f9;">
+                    <div class="px-4 py-3" style="background-color: #f8fafc;">
+                        <!-- Instructions Pill Alert -->
+                        <div class="d-flex align-items-center gap-2 p-3 rounded mb-3" style="background-color: #fff7ed; border: 1.5px solid #fed7aa; color: #c2410c; font-size: 0.80rem;">
+                            <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+                            <div>
+                                <span class="fw-bold">TEST INSTRUCTIONS:</span> Write your final answer letter before each question number (e.g. <code>A 1.</code>). Answers elsewhere will not be counted by the OCR scanner.
+                            </div>
+                        </div>
+
+                        <!-- Questions List -->
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var q in exam.Questions)
+                            {
+                                <div class="p-3 bg-white rounded" style="border: 1px solid #e2e8f0;">
+                                    <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                                        <p class="fw-bold mb-0" style="font-size: 0.88rem; color: #1e293b;">
+                                            <span class="font-monospace text-muted me-1">______ @q.Number.</span> @q.QuestionText
+                                        </p>
+                                        <span class="badge fw-semibold flex-shrink-0" style="background-color: #f0fdf4; color: #16a34a; border: 1px solid #86efac; font-size: 0.68rem; border-radius: 20px; padding: 2px 8px;">
+                                            KEY: @q.CorrectAnswer
+                                        </span>
+                                    </div>
+
+                                    <div class="row g-2 ps-3 mb-2" style="font-size: 0.82rem; color: #475569;">
+                                        <div class="col-sm-6">
+                                            <span class="fw-bold" style="color: @(q.CorrectAnswer.Equals("A", StringComparison.OrdinalIgnoreCase) ? "#16a34a" : "#64748b");">A.</span> @q.OptionA
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="fw-bold" style="color: @(q.CorrectAnswer.Equals("B", StringComparison.OrdinalIgnoreCase) ? "#16a34a" : "#64748b");">B.</span> @q.OptionB
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="fw-bold" style="color: @(q.CorrectAnswer.Equals("C", StringComparison.OrdinalIgnoreCase) ? "#16a34a" : "#64748b");">C.</span> @q.OptionC
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <span class="fw-bold" style="color: @(q.CorrectAnswer.Equals("D", StringComparison.OrdinalIgnoreCase) ? "#16a34a" : "#64748b");">D.</span> @q.OptionD
+                                        </div>
+                                    </div>
+
+                                    @if (!string.IsNullOrEmpty(q.Explanation))
+                                    {
+                                        <div class="pt-2 mt-2" style="border-top: 1px solid #f1f5f9; font-size: 0.78rem;">
+                                            <span class="fw-semibold" style="color: #2563eb;">Explanation:</span>
+                                            <span style="color: #64748b;">@q.Explanation</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div style="height: 3px; background: linear-gradient(90deg, #9333ea, #a78bfa); border-radius: 0 0 0.375rem 0.375rem;"></div>
             </div>
         }
-    </div>
+    }
+    else
+    {
+        <!-- Empty State -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body p-5 text-center">
+                <div class="rounded p-4 text-center mx-auto" style="max-width: 480px; background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px;">
+                    <i class="bi bi-journal-x" style="font-size: 2.2rem; color: #cbd5e1;"></i>
+                    <p class="mt-2 mb-1 fw-semibold" style="color: #64748b; font-size: 0.88rem;">No exam questionnaires generated yet</p>
+                    <p class="mb-3" style="color: #94a3b8; font-size: 0.75rem; font-style: italic;">
+                        Select a course topic to generate your first multiple-choice exam.
+                    </p>
+                    <a href="/GenerateQuestionnaire" class="btn fw-semibold d-inline-flex align-items-center gap-2 btn-cc-purple" style="background-color: #fdf4ff; color: #9333ea; border: 1.5px solid #d8b4fe; border-radius: 8px; font-size: 0.78rem;">
+                        <i class="bi bi-magic"></i> Generate Exam
+                    </a>
+                </div>
+            </div>
+            <div style="height: 3px; background: linear-gradient(90deg, #9333ea, #a78bfa); border-radius: 0 0 0.375rem 0.375rem;"></div>
+        </div>
+    }
+
 </div>

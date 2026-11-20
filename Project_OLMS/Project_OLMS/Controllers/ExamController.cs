@@ -76,6 +76,8 @@ namespace Project_OLMS.Controllers
             await auditLogService.LogDocumentExamAsync(
                 action: "Exam Generated",
                 details: $"Generated {questions.Count}-question exam (Exam ID: {exam.Id}) from document '{document.FileName}' (ID: {documentId})",
+                userId: GetCurrentUserId(),
+                username: GetCurrentUsername(),
                 ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
             );
 
@@ -145,6 +147,8 @@ namespace Project_OLMS.Controllers
             await auditLogService.LogDocumentExamAsync(
                 action: "Batch Exam Generated",
                 details: $"Generated {questions.Count}-question exam (Exam ID: {exam.Id}) from batch '{request.BatchTitle}' ({documents.Count} file(s))",
+                userId: GetCurrentUserId(),
+                username: GetCurrentUsername(),
                 ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
             );
 
@@ -381,6 +385,8 @@ namespace Project_OLMS.Controllers
             await auditLogService.LogDocumentExamAsync(
                 action: "Questionnaire Downloaded",
                 details: $"Downloaded questionnaire PDF for '{documentName}' (Exam ID: {examId})",
+                userId: GetCurrentUserId(),
+                username: GetCurrentUsername(),
                 ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
             );
 
@@ -460,6 +466,8 @@ namespace Project_OLMS.Controllers
             await auditLogService.LogDocumentExamAsync(
                 action: "Answer Key Downloaded",
                 details: $"Downloaded answer key PDF for '{documentName}' (Exam ID: {examId})",
+                userId: GetCurrentUserId(),
+                username: GetCurrentUsername(),
                 ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
             );
 
@@ -533,5 +541,12 @@ namespace Project_OLMS.Controllers
             GeneratedAt      = exam.GeneratedAt,
             Questions        = questions
         };
+
+        private string? GetCurrentUserId() =>
+            User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+
+        private string? GetCurrentUsername() =>
+            User.FindFirst("username")?.Value;
     }
 }

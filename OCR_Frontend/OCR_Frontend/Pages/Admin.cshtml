@@ -4,227 +4,315 @@
     ViewData["Title"] = "Admin & System Logs";
 }
 
-<div class="container mt-4">
-    <!-- Header Banner -->
-    <div class="glass-panel p-4 mb-4 border-0 shadow-sm rounded-4 position-relative overflow-hidden" style="background: linear-gradient(135deg, rgba(220, 38, 38, 0.08) 0%, rgba(239, 68, 68, 0.12) 100%);">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h1 class="display-6 fw-bold mb-2" style="background: linear-gradient(to right, #dc2626, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                    <i class="bi bi-shield-lock-fill me-2" style="-webkit-text-fill-color: #dc2626;"></i>Admin Panel & System Logs
-                </h1>
-                <p class="text-muted fs-5 mb-0">Manage user accounts, view security logs, and monitor PDF/exam operations.</p>
-            </div>
-            <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <span class="badge bg-danger-subtle text-danger border border-danger-subtle p-2 px-3 rounded-pill me-2">
-                    <i class="bi bi-people-fill me-1"></i> @Model.Users.Count Users
-                </span>
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle p-2 px-3 rounded-pill">
-                    <i class="bi bi-journal-text me-1"></i> @(Model.UserActivityLogs.Count + Model.DocumentExamLogs.Count) Total Logs
-                </span>
-            </div>
+<style>
+    #adminTab .nav-link {
+        color: #64748b;
+        background-color: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        padding: 0.45rem 1rem;
+        transition: all 0.15s ease-in-out;
+    }
+    #adminTab .nav-link:hover {
+        background-color: #f1f5f9;
+        color: #1e293b;
+    }
+    #adminTab .nav-link.active {
+        background-color: #fff1f2;
+        border-color: #fda4af;
+        color: #e11d48;
+    }
+</style>
+
+<div class="container-fluid px-3 px-md-4 py-3">
+
+    <!-- Breadcrumb Card -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body px-4 py-2">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0" style="font-size: 0.78rem;">
+                    <li class="breadcrumb-item"><a asp-page="/Dashboard" class="text-decoration-none fw-semibold" style="color: #64748b;">Dashboard</a></li>
+                    <li class="breadcrumb-item active fw-semibold" aria-current="page" style="color: #e11d48;">Admin & Logs</li>
+                </ol>
+            </nav>
         </div>
+        <div style="height: 3px; background: linear-gradient(90deg, #e11d48, #fda4af); border-radius: 0 0 0.375rem 0.375rem;"></div>
     </div>
 
-    <!-- Alerts -->
+    <!-- Page Header Card -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body px-4 py-3">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 40px; height: 40px; background-color: #fff1f2; border: 1.5px solid #fda4af;">
+                        <i class="bi bi-shield-lock-fill" style="color: #e11d48; font-size: 1.15rem;"></i>
+                    </div>
+                    <div>
+                        <p class="text-uppercase fw-semibold mb-0" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                            <i class="bi bi-shield-check me-1"></i> System Administration
+                        </p>
+                        <h1 class="fw-bold mb-0" style="font-size: 1rem; color: #1e293b;">Admin Console & System Logs</h1>
+                    </div>
+                </div>
+                <div class="d-flex gap-2">
+                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #fff1f2; border: 1.5px solid #fda4af; color: #e11d48; border-radius: 6px; padding: 0.35rem 0.65rem;">
+                        <i class="bi bi-people-fill me-1"></i> @Model.Users.Count Accounts
+                    </span>
+                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #eff6ff; border: 1.5px solid #93c5fd; color: #2563eb; border-radius: 6px; padding: 0.35rem 0.65rem;">
+                        <i class="bi bi-journal-text me-1"></i> @(Model.UserActivityLogs.Count + Model.DocumentExamLogs.Count) Total Logs
+                    </span>
+                </div>
+            </div>
+        </div>
+        <div style="height: 3px; background: linear-gradient(90deg, #e11d48, #fda4af); border-radius: 0 0 0.375rem 0.375rem;"></div>
+    </div>
+
+    <!-- Notifications -->
     @if (!string.IsNullOrEmpty(Model.SuccessMessage))
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>@Model.SuccessMessage
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="card border-0 shadow-sm mb-3" style="background-color: #f0fdf4; border: 1.5px solid #86efac !important;">
+            <div class="card-body px-4 py-2 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2" style="color: #16a34a; font-size: 0.85rem; font-weight: 500;">
+                    <i class="bi bi-check-circle-fill"></i>
+                    <span>@Model.SuccessMessage</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.75rem;"></button>
+            </div>
         </div>
     }
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>@Model.ErrorMessage
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="card border-0 shadow-sm mb-3" style="background-color: #fff1f2; border: 1.5px solid #fda4af !important;">
+            <div class="card-body px-4 py-2 d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2" style="color: #e11d48; font-size: 0.85rem; font-weight: 500;">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>@Model.ErrorMessage</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="font-size: 0.75rem;"></button>
+            </div>
         </div>
     }
 
     <!-- Navigation Tabs -->
-    <ul class="nav nav-pills mb-4 gap-2" id="adminTab" role="tablist">
+    <ul class="nav nav-pills mb-3 gap-2" id="adminTab" role="tablist">
         <li class="nav-item" role="presentation">
-            <button class="nav-link active rounded-pill px-4" id="users-tab" data-bs-toggle="tab" data-bs-target="#users-panel" type="button" role="tab">
-                <i class="bi bi-person-gear me-2"></i>User Accounts (@Model.Users.Count)
+            <button class="nav-link active" id="users-tab" data-bs-toggle="tab" data-bs-target="#users-panel" type="button" role="tab">
+                <i class="bi bi-person-gear me-1"></i> User Accounts (@Model.Users.Count)
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link rounded-pill px-4" id="user-logs-tab" data-bs-toggle="tab" data-bs-target="#user-logs-panel" type="button" role="tab">
-                <i class="bi bi-person-lines-fill me-2"></i>User Activity Logs (@Model.UserActivityLogs.Count)
+            <button class="nav-link" id="user-logs-tab" data-bs-toggle="tab" data-bs-target="#user-logs-panel" type="button" role="tab">
+                <i class="bi bi-person-lines-fill me-1"></i> User Activity Logs (@Model.UserActivityLogs.Count)
             </button>
         </li>
         <li class="nav-item" role="presentation">
-            <button class="nav-link rounded-pill px-4" id="doc-logs-tab" data-bs-toggle="tab" data-bs-target="#doc-logs-panel" type="button" role="tab">
-                <i class="bi bi-file-earmark-code-fill me-2"></i>Document & Exam Logs (@Model.DocumentExamLogs.Count)
+            <button class="nav-link" id="doc-logs-tab" data-bs-toggle="tab" data-bs-target="#doc-logs-panel" type="button" role="tab">
+                <i class="bi bi-file-earmark-code-fill me-1"></i> Document & Exam Logs (@Model.DocumentExamLogs.Count)
             </button>
         </li>
     </ul>
 
-    <!-- Tab Content -->
+    <!-- Tab Content Panels -->
     <div class="tab-content" id="adminTabContent">
 
         <!-- ==================== TAB 1: USER ACCOUNTS ==================== -->
         <div class="tab-pane fade show active" id="users-panel" role="tabpanel">
+
             <!-- Stats Row -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-3">
-                    <div class="card glass-panel border-0 shadow-sm">
-                        <div class="card-body p-3 text-center">
-                            <div class="text-success fs-2 fw-bold">@Model.Users.Count(u => u.IsActive)</div>
-                            <small class="text-muted">Active Accounts</small>
+            <div class="row g-3 mb-3">
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body px-4 py-3">
+                            <p class="text-uppercase fw-semibold mb-1" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                                <i class="bi bi-check-circle-fill me-1"></i> ACTIVE ACCOUNTS
+                            </p>
+                            <div class="fw-bold" style="font-size: 2rem; color: #16a34a; line-height: 1.1;">
+                                @Model.Users.Count(u => u.IsActive)
+                            </div>
+                            <span style="font-size: 0.75rem; color: #64748b;">Enabled users</span>
                         </div>
+                        <div style="height: 3px; background: linear-gradient(90deg, #16a34a, #34d399); border-radius: 0 0 0.375rem 0.375rem;"></div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card glass-panel border-0 shadow-sm">
-                        <div class="card-body p-3 text-center">
-                            <div class="text-danger fs-2 fw-bold">@Model.Users.Count(u => !u.IsActive)</div>
-                            <small class="text-muted">Deactivated</small>
+
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body px-4 py-3">
+                            <p class="text-uppercase fw-semibold mb-1" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                                <i class="bi bi-slash-circle-fill me-1"></i> DEACTIVATED
+                            </p>
+                            <div class="fw-bold" style="font-size: 2rem; color: #e11d48; line-height: 1.1;">
+                                @Model.Users.Count(u => !u.IsActive)
+                            </div>
+                            <span style="font-size: 0.75rem; color: #64748b;">Suspended accounts</span>
                         </div>
+                        <div style="height: 3px; background: linear-gradient(90deg, #e11d48, #fda4af); border-radius: 0 0 0.375rem 0.375rem;"></div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card glass-panel border-0 shadow-sm">
-                        <div class="card-body p-3 text-center">
-                            <div class="text-primary fs-2 fw-bold">@Model.Users.Count(u => u.Role == "Admin")</div>
-                            <small class="text-muted">Administrators</small>
+
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body px-4 py-3">
+                            <p class="text-uppercase fw-semibold mb-1" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                                <i class="bi bi-shield-fill-check me-1"></i> ADMINISTRATORS
+                            </p>
+                            <div class="fw-bold" style="font-size: 2rem; color: #2563eb; line-height: 1.1;">
+                                @Model.Users.Count(u => u.Role == "Admin")
+                            </div>
+                            <span style="font-size: 0.75rem; color: #64748b;">Privileged access</span>
                         </div>
+                        <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 0 0 0.375rem 0.375rem;"></div>
                     </div>
                 </div>
-                <div class="col-md-3">
-                    <div class="card glass-panel border-0 shadow-sm">
-                        <div class="card-body p-3 text-center">
-                            <div class="text-warning fs-2 fw-bold">@Model.Users.Count(u => !u.IsEmailVerified)</div>
-                            <small class="text-muted">Unverified</small>
+
+                <div class="col-6 col-md-3">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-body px-4 py-3">
+                            <p class="text-uppercase fw-semibold mb-1" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i> UNVERIFIED EMAIL
+                            </p>
+                            <div class="fw-bold" style="font-size: 2rem; color: #c2410c; line-height: 1.1;">
+                                @Model.Users.Count(u => !u.IsEmailVerified)
+                            </div>
+                            <span style="font-size: 0.75rem; color: #64748b;">Pending verification</span>
                         </div>
+                        <div style="height: 3px; background: linear-gradient(90deg, #c2410c, #fb923c); border-radius: 0 0 0.375rem 0.375rem;"></div>
                     </div>
                 </div>
             </div>
 
-            <!-- Users Table -->
-            <div class="card glass-panel border-0 shadow-sm mb-5">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="card-title mb-0"><i class="bi bi-people-fill text-primary me-2"></i>User Accounts Directory</h5>
-                        <button type="button" class="btn btn-primary rounded-pill px-4 py-2 shadow-sm fw-semibold" data-bs-toggle="modal" data-bs-target="#createUserModal">
-                            <i class="bi bi-person-plus-fill me-2"></i>Create Account
+            <!-- Users Table Card -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body px-4 py-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <p class="text-uppercase fw-semibold mb-0" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                            <i class="bi bi-people-fill me-1"></i> USER ACCOUNTS DIRECTORY
+                        </p>
+                        <button type="button" class="btn btn-sm fw-semibold btn-cc-blue" data-bs-toggle="modal" data-bs-target="#createUserModal" style="background-color: #eff6ff; border: 1.5px solid #93c5fd; color: #2563eb; border-radius: 8px; font-size: 0.78rem; padding: 0.45rem 1rem;">
+                            <i class="bi bi-person-plus-fill me-1"></i> Create Account
                         </button>
                     </div>
+
                     @if (Model.Users.Count == 0)
                     {
-                        <div class="text-center py-5 text-muted">
-                            <i class="bi bi-person-x fs-1"></i>
-                            <p class="mt-2">No users found.</p>
+                        <div style="background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; padding: 2.5rem; text-align: center; color: #94a3b8;">
+                            <i class="bi bi-people fs-2 d-block mb-2" style="color: #cbd5e1;"></i>
+                            <span style="font-size: 0.85rem; font-style: italic;">No registered user accounts found in the database.</span>
                         </div>
                     }
                     else
                     {
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead style="border-bottom: 2px solid #e2e8f0; font-size: 0.72rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
                                     <tr>
-                                        <th>ID</th>
-                                        <th>Username</th>
-                                        <th>Email</th>
-                                        <th class="text-center">Role</th>
-                                        <th class="text-center">Verified</th>
-                                        <th class="text-center">Status</th>
-                                        <th class="text-center" style="min-width: 260px;">Actions</th>
+                                        <th class="ps-3 py-2">ID</th>
+                                        <th class="py-2">Username</th>
+                                        <th class="py-2">Email</th>
+                                        <th class="py-2 text-center">Role</th>
+                                        <th class="py-2 text-center">Verified</th>
+                                        <th class="py-2 text-center">Status</th>
+                                        <th class="pe-3 py-2 text-end">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var user in Model.Users)
                                     {
-                                        <tr>
-                                            <td><code class="text-dark fw-semibold">@user.Id</code></td>
-                                            <td>
-                                                <i class="bi bi-person-circle text-primary me-1"></i>
-                                                @user.Username
+                                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                                            <td class="ps-3 py-2">
+                                                <span class="font-monospace" style="color: #64748b; font-size: 0.80rem;">@user.Id</span>
                                             </td>
-                                            <td class="text-muted">@user.Email</td>
-                                            <td class="text-center">
+                                            <td class="py-2">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="d-inline-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 24px; height: 24px; background-color: #f1f5f9;">
+                                                        <i class="bi bi-person" style="font-size: 0.75rem; color: #64748b;"></i>
+                                                    </span>
+                                                    <span class="fw-semibold" style="font-size: 0.85rem; color: #1e293b;">@user.Username</span>
+                                                </div>
+                                            </td>
+                                            <td class="py-2" style="font-size: 0.85rem; color: #475569;">
+                                                @user.Email
+                                            </td>
+                                            <td class="py-2 text-center">
                                                 @if (user.Role == "Admin")
                                                 {
-                                                    <span class="badge bg-danger-subtle text-danger px-3 py-1">
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #fff1f2; border: 1.5px solid #fda4af; color: #e11d48; border-radius: 6px; padding: 0.3rem 0.6rem;">
                                                         <i class="bi bi-shield-fill-check me-1"></i>Admin
                                                     </span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="badge bg-primary-subtle text-primary px-3 py-1">
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #eff6ff; border: 1.5px solid #93c5fd; color: #2563eb; border-radius: 6px; padding: 0.3rem 0.6rem;">
                                                         <i class="bi bi-person me-1"></i>User
                                                     </span>
                                                 }
                                             </td>
-                                            <td class="text-center">
+                                            <td class="py-2 text-center">
                                                 @if (user.IsEmailVerified)
                                                 {
-                                                    <span class="text-success"><i class="bi bi-check-circle-fill fs-5"></i></span>
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #f0fdf4; border: 1.5px solid #86efac; color: #16a34a; border-radius: 6px; padding: 0.3rem 0.6rem;">
+                                                        <i class="bi bi-check-circle-fill me-1"></i>Verified
+                                                    </span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="text-warning"><i class="bi bi-exclamation-circle-fill fs-5"></i></span>
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #fff7ed; border: 1.5px solid #fed7aa; color: #c2410c; border-radius: 6px; padding: 0.3rem 0.6rem;">
+                                                        <i class="bi bi-exclamation-circle-fill me-1"></i>Unverified
+                                                    </span>
                                                 }
                                             </td>
-                                            <td class="text-center">
+                                            <td class="py-2 text-center">
                                                 @if (user.IsActive)
                                                 {
-                                                    <span class="badge bg-success-subtle text-success px-3 py-1">
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #f0fdf4; border: 1.5px solid #86efac; color: #16a34a; border-radius: 6px; padding: 0.3rem 0.6rem;">
                                                         <i class="bi bi-check-lg me-1"></i>Active
                                                     </span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="badge bg-secondary px-3 py-1">
-                                                        <i class="bi bi-x-lg me-1"></i>Inactive
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #f1f5f9; border: 1.5px dashed #cbd5e1; color: #94a3b8; border-radius: 6px; padding: 0.3rem 0.6rem;">
+                                                        <i class="bi bi-slash-circle me-1"></i>Inactive
                                                     </span>
                                                 }
                                             </td>
-                                            <td class="text-center">
-                                                <div class="d-flex justify-content-center gap-1 flex-wrap">
+                                            <td class="pe-3 py-2 text-end">
+                                                <div class="d-inline-flex gap-1">
                                                     <!-- Toggle Active/Deactivate -->
-                                                    <form method="post" asp-page-handler="ToggleActive" class="d-inline">
+                                                    <form method="post" asp-page-handler="ToggleActive" class="d-inline m-0">
                                                         <input type="hidden" name="userId" value="@user.Id" />
                                                         @if (user.IsActive)
                                                         {
-                                                            <button type="submit" class="btn btn-outline-warning btn-sm" title="Deactivate account">
-                                                                <i class="bi bi-pause-circle"></i> Deactivate
+                                                            <button type="submit" class="btn btn-sm fw-semibold btn-cc-orange" title="Deactivate user" style="background-color: #fff7ed; border: 1.5px solid #fed7aa; color: #c2410c; border-radius: 6px; font-size: 0.75rem; padding: 0.25rem 0.55rem;">
+                                                                <i class="bi bi-pause-circle me-1"></i>Deactivate
                                                             </button>
                                                         }
                                                         else
                                                         {
-                                                            <button type="submit" class="btn btn-outline-success btn-sm" title="Activate account">
-                                                                <i class="bi bi-play-circle"></i> Activate
+                                                            <button type="submit" class="btn btn-sm fw-semibold btn-cc-green" title="Activate user" style="background-color: #f0fdf4; border: 1.5px solid #86efac; color: #16a34a; border-radius: 6px; font-size: 0.75rem; padding: 0.25rem 0.55rem;">
+                                                                <i class="bi bi-play-circle me-1"></i>Activate
                                                             </button>
                                                         }
                                                     </form>
 
                                                     <!-- Change Role -->
-                                                    <form method="post" asp-page-handler="ChangeRole" class="d-inline">
+                                                    <form method="post" asp-page-handler="ChangeRole" class="d-inline m-0">
                                                         <input type="hidden" name="userId" value="@user.Id" />
                                                         @if (user.Role == "Admin")
                                                         {
                                                             <input type="hidden" name="newRole" value="User" />
-                                                            <button type="submit" class="btn btn-outline-primary btn-sm" title="Demote to User">
-                                                                <i class="bi bi-arrow-down-circle"></i> Demote
+                                                            <button type="submit" class="btn btn-sm fw-semibold btn-cc-blue" title="Demote to User" style="background-color: #eff6ff; border: 1.5px solid #93c5fd; color: #2563eb; border-radius: 6px; font-size: 0.75rem; padding: 0.25rem 0.55rem;">
+                                                                <i class="bi bi-arrow-down-circle me-1"></i>Demote
                                                             </button>
                                                         }
                                                         else
                                                         {
                                                             <input type="hidden" name="newRole" value="Admin" />
-                                                            <button type="submit" class="btn btn-outline-danger btn-sm" title="Promote to Admin">
-                                                                <i class="bi bi-arrow-up-circle"></i> Promote
+                                                            <button type="submit" class="btn btn-sm fw-semibold btn-cc-purple" title="Promote to Admin" style="background-color: #fdf4ff; border: 1.5px solid #d8b4fe; color: #9333ea; border-radius: 6px; font-size: 0.75rem; padding: 0.25rem 0.55rem;">
+                                                                <i class="bi bi-arrow-up-circle me-1"></i>Promote
                                                             </button>
                                                         }
-                                                    </form>
-
-                                                    <!-- Delete User -->
-                                                    <form method="post" asp-page-handler="DeleteUser" class="d-inline"
-                                                          onsubmit="return confirm('Are you sure you want to permanently delete user @user.Username? This cannot be undone.');">
-                                                        <input type="hidden" name="userId" value="@user.Id" />
-                                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Delete account permanently">
-                                                            <i class="bi bi-trash3"></i>
-                                                        </button>
                                                     </form>
                                                 </div>
                                             </td>
@@ -235,82 +323,99 @@
                         </div>
                     }
                 </div>
+                <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 0 0 0.375rem 0.375rem;"></div>
             </div>
+
         </div>
 
         <!-- ==================== TAB 2: USER ACTIVITY LOGS ==================== -->
         <div class="tab-pane fade" id="user-logs-panel" role="tabpanel">
-            <div class="card glass-panel border-0 shadow-sm mb-5">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0"><i class="bi bi-person-lines-fill text-primary me-2"></i>User Activity & Security Logs</h5>
-                        <span class="text-muted small">Registrations, logins, email verifications & admin status updates</span>
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body px-4 py-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <div>
+                            <p class="text-uppercase fw-semibold mb-0" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                                <i class="bi bi-person-lines-fill me-1"></i> USER ACTIVITY & SECURITY LOGS
+                            </p>
+                            <span style="font-size: 0.78rem; color: #64748b;">Audit trail of logins, registrations, verifications and status changes</span>
+                        </div>
                     </div>
 
                     @if (Model.UserActivityLogs.Count == 0)
                     {
-                        <div class="text-center py-5 text-muted">
-                            <i class="bi bi-journal-x fs-1"></i>
-                            <p class="mt-2">No user activity logs recorded yet.</p>
+                        <div style="background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; padding: 2.5rem; text-align: center; color: #94a3b8;">
+                            <i class="bi bi-journal-x fs-2 d-block mb-2" style="color: #cbd5e1;"></i>
+                            <span style="font-size: 0.85rem; font-style: italic;">No user activity logs recorded yet.</span>
                         </div>
                     }
                     else
                     {
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead style="border-bottom: 2px solid #e2e8f0; font-size: 0.72rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
                                     <tr>
-                                        <th>Timestamp</th>
-                                        <th>Action</th>
-                                        <th>User / Account</th>
-                                        <th>Details</th>
+                                        <th class="ps-3 py-2" style="width: 170px;">Timestamp</th>
+                                        <th class="py-2" style="width: 150px;">Action</th>
+                                        <th class="py-2" style="width: 220px;">User / Account</th>
+                                        <th class="pe-3 py-2">Details</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var log in Model.UserActivityLogs)
                                     {
-                                        <tr>
-                                            <td class="text-nowrap text-muted small">
-                                                <i class="bi bi-clock me-1"></i>@log.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                                            <td class="ps-3 py-2">
+                                                <span class="font-monospace" style="font-size: 0.78rem; color: #64748b;">
+                                                    <i class="bi bi-clock me-1"></i>@log.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                                                </span>
                                             </td>
-                                            <td>
+                                            <td class="py-2">
                                                 @if (log.Action.Contains("Login"))
                                                 {
-                                                    <span class="badge bg-success-subtle text-success"><i class="bi bi-box-arrow-in-right me-1"></i>@log.Action</span>
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #f0fdf4; border: 1.5px solid #86efac; color: #16a34a; border-radius: 6px; padding: 0.3rem 0.55rem;">
+                                                        <i class="bi bi-box-arrow-in-right me-1"></i>@log.Action
+                                                    </span>
                                                 }
                                                 else if (log.Action.Contains("Registered"))
                                                 {
-                                                    <span class="badge bg-primary-subtle text-primary"><i class="bi bi-person-plus me-1"></i>@log.Action</span>
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #eff6ff; border: 1.5px solid #93c5fd; color: #2563eb; border-radius: 6px; padding: 0.3rem 0.55rem;">
+                                                        <i class="bi bi-person-plus me-1"></i>@log.Action
+                                                    </span>
                                                 }
                                                 else if (log.Action.Contains("Deactivated") || log.Action.Contains("Deleted") || log.Action.Contains("Failed"))
                                                 {
-                                                    <span class="badge bg-danger-subtle text-danger"><i class="bi bi-exclamation-octagon me-1"></i>@log.Action</span>
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #fff1f2; border: 1.5px solid #fda4af; color: #e11d48; border-radius: 6px; padding: 0.3rem 0.55rem;">
+                                                        <i class="bi bi-exclamation-octagon me-1"></i>@log.Action
+                                                    </span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="badge bg-info-subtle text-info"><i class="bi bi-info-circle me-1"></i>@log.Action</span>
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #f1f5f9; border: 1.5px solid #e2e8f0; color: #475569; border-radius: 6px; padding: 0.3rem 0.55rem;">
+                                                        <i class="bi bi-info-circle me-1"></i>@log.Action
+                                                    </span>
                                                 }
                                             </td>
-                                            <td>
+                                            <td class="py-2">
                                                 @if (!string.IsNullOrEmpty(log.Username))
                                                 {
-                                                    <span class="fw-semibold"><i class="bi bi-person me-1"></i>@log.Username</span>
+                                                    <span class="fw-semibold" style="font-size: 0.85rem; color: #1e293b;">@log.Username</span>
                                                     @if (!string.IsNullOrEmpty(log.UserId))
                                                     {
-                                                        <small class="text-muted ms-1">(@log.UserId)</small>
+                                                        <span class="font-monospace ms-1" style="font-size: 0.72rem; color: #94a3b8;">(@log.UserId)</span>
                                                     }
                                                 }
                                                 else if (!string.IsNullOrEmpty(log.UserId))
                                                 {
-                                                    <code>@log.UserId</code>
+                                                    <span class="font-monospace" style="font-size: 0.78rem; color: #64748b;">@log.UserId</span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="text-muted">System / Anonymous</span>
+                                                    <span style="font-size: 0.80rem; color: #94a3b8; font-style: italic;">System / Anonymous</span>
                                                 }
                                             </td>
-                                            <td class="text-wrap" style="max-width: 350px;">@log.Details</td>
-                                            
+                                            <td class="pe-3 py-2 text-wrap" style="font-size: 0.82rem; color: #475569; max-width: 400px;">
+                                                @log.Details
+                                            </td>
                                         </tr>
                                     }
                                 </tbody>
@@ -318,86 +423,106 @@
                         </div>
                     }
                 </div>
+                <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #9333ea, #0f766e); border-radius: 0 0 0.375rem 0.375rem;"></div>
             </div>
         </div>
 
         <!-- ==================== TAB 3: DOCUMENT & EXAM LOGS ==================== -->
         <div class="tab-pane fade" id="doc-logs-panel" role="tabpanel">
-            <div class="card glass-panel border-0 shadow-sm mb-5">
-                <div class="card-body p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0"><i class="bi bi-file-earmark-code-fill text-purple me-2" style="color: #8b5cf6;"></i>Document Upload, Exam & PDF Download Logs</h5>
-                        <span class="text-muted small">Uploads, AI generation, PDF downloads & student OCR answer sheet checking</span>
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body px-4 py-3">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                        <div>
+                            <p class="text-uppercase fw-semibold mb-0" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">
+                                <i class="bi bi-file-earmark-code-fill me-1"></i> DOCUMENT & EXAM OPERATIONS LOGS
+                            </p>
+                            <span style="font-size: 0.78rem; color: #64748b;">Audit trail of PDF uploads, AI exam generation, PDF downloads and OCR grading</span>
+                        </div>
                     </div>
 
                     @if (Model.DocumentExamLogs.Count == 0)
                     {
-                        <div class="text-center py-5 text-muted">
-                            <i class="bi bi-file-earmark-x fs-1"></i>
-                            <p class="mt-2">No document or exam operation logs recorded yet.</p>
+                        <div style="background-color: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 8px; padding: 2.5rem; text-align: center; color: #94a3b8;">
+                            <i class="bi bi-file-earmark-x fs-2 d-block mb-2" style="color: #cbd5e1;"></i>
+                            <span style="font-size: 0.85rem; font-style: italic;">No document or exam operation logs recorded yet.</span>
                         </div>
                     }
                     else
                     {
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
+                            <table class="table table-sm table-hover align-middle mb-0">
+                                <thead style="border-bottom: 2px solid #e2e8f0; font-size: 0.72rem; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">
                                     <tr>
-                                        <th>Timestamp</th>
-                                        <th>Operation</th>
-                                        <th>Details</th>
-                                        <th>User</th>
+                                        <th class="ps-3 py-2" style="width: 170px;">Timestamp</th>
+                                        <th class="py-2" style="width: 150px;">Operation</th>
+                                        <th class="py-2">Details</th>
+                                        <th class="pe-3 py-2" style="width: 200px;">User</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach (var log in Model.DocumentExamLogs)
                                     {
-                                        <tr>
-                                            <td class="text-nowrap text-muted small">
-                                                <i class="bi bi-clock me-1"></i>@log.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                                        <tr style="border-bottom: 1px solid #f1f5f9;">
+                                            <td class="ps-3 py-2">
+                                                <span class="font-monospace" style="font-size: 0.78rem; color: #64748b;">
+                                                    <i class="bi bi-clock me-1"></i>@log.Timestamp.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                                                </span>
                                             </td>
-                                            <td>
+                                            <td class="py-2">
                                                 @if (log.Action.Contains("Upload"))
                                                 {
-                                                    <span class="badge bg-primary-subtle text-primary"><i class="bi bi-cloud-upload me-1"></i>@log.Action</span>
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #eff6ff; border: 1.5px solid #93c5fd; color: #2563eb; border-radius: 6px; padding: 0.3rem 0.55rem;">
+                                                        <i class="bi bi-cloud-arrow-up me-1"></i>@log.Action
+                                                    </span>
                                                 }
                                                 else if (log.Action.Contains("Generated"))
                                                 {
-                                                    <span class="badge bg-purple-subtle text-purple px-3" style="background-color: #f3e8ff; color: #7e22ce;"><i class="bi bi-robot me-1"></i>@log.Action</span>
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #fdf4ff; border: 1.5px solid #d8b4fe; color: #9333ea; border-radius: 6px; padding: 0.3rem 0.55rem;">
+                                                        <i class="bi bi-magic me-1"></i>@log.Action
+                                                    </span>
                                                 }
                                                 else if (log.Action.Contains("Downloaded"))
                                                 {
-                                                    <span class="badge bg-success-subtle text-success"><i class="bi bi-download me-1"></i>@log.Action</span>
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #f0fdfa; border: 1.5px solid #99f6e4; color: #0f766e; border-radius: 6px; padding: 0.3rem 0.55rem;">
+                                                        <i class="bi bi-download me-1"></i>@log.Action
+                                                    </span>
                                                 }
                                                 else if (log.Action.Contains("Graded"))
                                                 {
-                                                    <span class="badge bg-info-subtle text-info"><i class="bi bi-check-all me-1"></i>@log.Action</span>
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #f0fdf4; border: 1.5px solid #86efac; color: #16a34a; border-radius: 6px; padding: 0.3rem 0.55rem;">
+                                                        <i class="bi bi-check-all me-1"></i>@log.Action
+                                                    </span>
                                                 }
                                                 else if (log.Action.Contains("Deleted"))
                                                 {
-                                                    <span class="badge bg-danger-subtle text-danger"><i class="bi bi-trash me-1"></i>@log.Action</span>
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #fff1f2; border: 1.5px solid #fda4af; color: #e11d48; border-radius: 6px; padding: 0.3rem 0.55rem;">
+                                                        <i class="bi bi-trash me-1"></i>@log.Action
+                                                    </span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="badge bg-secondary"><i class="bi bi-app-indicator me-1"></i>@log.Action</span>
+                                                    <span class="badge fw-semibold" style="font-size: 0.68rem; background-color: #f1f5f9; border: 1.5px solid #e2e8f0; color: #475569; border-radius: 6px; padding: 0.3rem 0.55rem;">
+                                                        <i class="bi bi-app-indicator me-1"></i>@log.Action
+                                                    </span>
                                                 }
                                             </td>
-                                            <td class="text-wrap" style="max-width: 400px;">@log.Details</td>
-                                            <td>
+                                            <td class="py-2 text-wrap" style="font-size: 0.82rem; color: #475569; max-width: 420px;">
+                                                @log.Details
+                                            </td>
+                                            <td class="pe-3 py-2">
                                                 @if (!string.IsNullOrEmpty(log.Username))
                                                 {
-                                                    <span class="fw-semibold"><i class="bi bi-person me-1"></i>@log.Username</span>
+                                                    <span class="fw-semibold" style="font-size: 0.85rem; color: #1e293b;">@log.Username</span>
                                                 }
                                                 else if (!string.IsNullOrEmpty(log.UserId))
                                                 {
-                                                    <code>@log.UserId</code>
+                                                    <span class="font-monospace" style="font-size: 0.78rem; color: #64748b;">@log.UserId</span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="text-muted">System / Web User</span>
+                                                    <span style="font-size: 0.80rem; color: #94a3b8; font-style: italic;">System / Web User</span>
                                                 }
                                             </td>
-                                            
                                         </tr>
                                     }
                                 </tbody>
@@ -405,6 +530,7 @@
                         </div>
                     }
                 </div>
+                <div style="height: 3px; background: linear-gradient(90deg, #9333ea, #a78bfa); border-radius: 0 0 0.375rem 0.375rem;"></div>
             </div>
         </div>
 
@@ -414,57 +540,61 @@
 <!-- Create Account Modal -->
 <div class="modal fade" id="createUserModal" tabindex="-1" aria-labelledby="createUserModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content glass-panel border-0 shadow-lg">
-            <div class="modal-header border-0 bg-primary bg-opacity-10 pt-4 px-4">
-                <h5 class="modal-title fw-bold text-primary d-flex align-items-center gap-2" id="createUserModalLabel">
-                    <i class="bi bi-person-plus-fill fs-4"></i> Create New User Account
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <div class="modal-content border-0 shadow" style="border-radius: 8px;">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0" style="width: 34px; height: 34px; background-color: #eff6ff; border: 1.5px solid #93c5fd;">
+                        <i class="bi bi-person-plus-fill" style="color: #2563eb; font-size: 1rem;"></i>
+                    </div>
+                    <div>
+                        <p class="text-uppercase fw-semibold mb-0" style="font-size: 0.70rem; letter-spacing: 0.08em; color: #94a3b8;">NEW ACCOUNT</p>
+                        <h6 class="modal-title fw-bold mb-0" id="createUserModalLabel" style="font-size: 1rem; color: #1e293b;">Create User Account</h6>
+                    </div>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="font-size: 0.75rem;"></button>
             </div>
             <form method="post" asp-page-handler="CreateUser">
-                <div class="modal-body py-4 px-4">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Username</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-person"></i></span>
-                            <input asp-for="NewUser.Username" class="form-control border-start-0 ps-0" placeholder="e.g. john_doe" required />
-                        </div>
+                <div class="modal-body px-4 py-3">
+                    <div class="form-floating mb-3">
+                        <input asp-for="NewUser.Username" class="form-control" placeholder="Username" required />
+                        <label asp-for="NewUser.Username">Username (e.g. john_doe)</label>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Email Address</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-envelope"></i></span>
-                            <input asp-for="NewUser.Email" type="email" class="form-control border-start-0 ps-0" placeholder="name@example.com" required />
-                        </div>
+
+                    <div class="form-floating mb-3">
+                        <input asp-for="NewUser.Email" type="email" class="form-control" placeholder="name@example.com" required />
+                        <label asp-for="NewUser.Email">Email Address</label>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Password</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light text-muted border-end-0"><i class="bi bi-key"></i></span>
-                            <input asp-for="NewUser.Password" type="password" class="form-control border-start-0 ps-0" placeholder="••••••••" required />
-                        </div>
+
+                    <div class="form-floating mb-3">
+                        <input asp-for="NewUser.Password" type="password" class="form-control" placeholder="••••••••" required />
+                        <label asp-for="NewUser.Password">Password</label>
                     </div>
+
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-semibold">Account Role</label>
-                            <select asp-for="NewUser.Role" class="form-select">
-                                <option value="User">User</option>
-                                <option value="Admin">Admin</option>
-                            </select>
+                            <div class="form-floating">
+                                <select asp-for="NewUser.Role" class="form-select">
+                                    <option value="User">User</option>
+                                    <option value="Admin">Admin</option>
+                                </select>
+                                <label asp-for="NewUser.Role">Account Role</label>
+                            </div>
                         </div>
-                        <div class="col-md-6 d-flex align-items-end">
-                            <div class="form-check mb-2">
+                        <div class="col-md-6 d-flex align-items-center">
+                            <div class="form-check pt-2">
                                 <input asp-for="NewUser.IsEmailVerified" type="checkbox" class="form-check-input" id="isVerifiedCheck" checked />
-                                <label class="form-check-label fw-medium small" for="isVerifiedCheck">
+                                <label class="form-check-label fw-semibold" for="isVerifiedCheck" style="font-size: 0.80rem; color: #475569;">
                                     Mark Email as Verified
                                 </label>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 pb-4 px-4">
-                    <button type="button" class="btn btn-light px-3" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                <div class="modal-footer border-0 px-4 pb-4 pt-1">
+                    <button type="button" class="btn btn-sm fw-semibold btn-cc-neutral" data-bs-dismiss="modal" style="background-color: #f1f5f9; border: 1.5px solid #e2e8f0; color: #475569; border-radius: 8px; font-size: 0.78rem; padding: 0.45rem 1rem;">
+                        Cancel
+                    </button>
+                    <button type="submit" class="btn btn-sm fw-semibold btn-cc-green" style="background-color: #f0fdf4; border: 1.5px solid #86efac; color: #16a34a; border-radius: 8px; font-size: 0.78rem; padding: 0.45rem 1.25rem;">
                         <i class="bi bi-check-circle-fill me-1"></i> Create Account
                     </button>
                 </div>

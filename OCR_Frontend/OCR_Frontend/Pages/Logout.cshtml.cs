@@ -1,19 +1,21 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using OCR_Frontend.Helpers;
 
 namespace OCR_Frontend.Pages
 {
+    [IgnoreAntiforgeryToken]
     public class LogoutModel : PageModel
     {
         public IActionResult OnGet()
         {
-            // Remove all session cookies
-            Response.Cookies.Delete("AuthToken");
-            Response.Cookies.Delete("DisplayName");
-            Response.Cookies.Delete("DisplayEmail");
-            Response.Cookies.Delete("UserRole");
-            Response.Cookies.Delete("UserId");
-            // Redirect to the login page after logout
+            AuthCookieHelper.ClearSessionCookies(Response);
+            return RedirectToPage("/Login");
+        }
+
+        public IActionResult OnPost()
+        {
+            AuthCookieHelper.ClearSessionCookies(Response);
             return RedirectToPage("/Login");
         }
     }

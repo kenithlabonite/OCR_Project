@@ -42,9 +42,15 @@ namespace OCR_Frontend.Pages
             }
 
             var client = _httpClientFactory.CreateClient("BackendClient");
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
             try
             {
                 var response = await client.GetAsync($"/api/auth/profile/{identifier}");
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                {
+                    OCR_Frontend.Helpers.AuthCookieHelper.ClearSessionCookies(Response);
+                    return RedirectToPage("/Login");
+                }
                 if (response.IsSuccessStatusCode)
                 {
                     var user = await response.Content.ReadFromJsonAsync<UserProfileDto>();
@@ -94,6 +100,7 @@ namespace OCR_Frontend.Pages
             }
 
             var client = _httpClientFactory.CreateClient("BackendClient");
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authToken);
             var updatePayload = new
             {
                 firstName = Input.FirstName,
@@ -107,6 +114,12 @@ namespace OCR_Frontend.Pages
             };
 
             var response = await client.PutAsJsonAsync($"/api/auth/profile/{identifier}", updatePayload);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                OCR_Frontend.Helpers.AuthCookieHelper.ClearSessionCookies(Response);
+                return RedirectToPage("/Login");
+            }
 
             if (!response.IsSuccessStatusCode)
             {

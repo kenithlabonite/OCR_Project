@@ -4,6 +4,8 @@ using System.Net.Http.Headers;
 
 namespace OCR_Frontend.Pages
 {
+    [RequestSizeLimit(150 * 1024 * 1024)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 150 * 1024 * 1024)]
     public class UploadPdfModel : PageModel
     {
         private readonly IHttpClientFactory _httpClientFactory;
@@ -25,12 +27,24 @@ namespace OCR_Frontend.Pages
         public string? SuccessMessage { get; set; }
         public string? ErrorMessage { get; set; }
 
-        public void OnGet()
+        public IActionResult OnGet()
         {
+            var token = Request.Cookies["AuthToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToPage("/Login");
+            }
+            return Page();
         }
 
         public async Task<IActionResult> OnPostAsync()
         {
+            var token = Request.Cookies["AuthToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToPage("/Login");
+            }
+
             if (PdfFiles == null || PdfFiles.Count == 0)
             {
                 ErrorMessage = "Please select at least one PDF file.";
@@ -67,15 +81,22 @@ namespace OCR_Frontend.Pages
             {
                 content.Add(new StringContent(BatchTitle), "BatchTitle");
             }
+            var userId = Request.Cookies["UserId"];
+            if (!string.IsNullOrEmpty(userId))
+            {
+                content.Add(new StringContent(userId), "UploadedByUserId");
+            }
             
             // Add Auth token
-            var token = Request.Cookies["AuthToken"];
-            if (!string.IsNullOrEmpty(token))
-            {
-                client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-            }
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
             var response = await client.PostAsync("/api/pdfupload", content);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                OCR_Frontend.Helpers.AuthCookieHelper.ClearSessionCookies(Response);
+                return RedirectToPage("/Login");
+            }
 
             if (response.IsSuccessStatusCode)
             {

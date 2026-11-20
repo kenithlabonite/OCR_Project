@@ -73,6 +73,27 @@ namespace Project_OLMS.Data
             modelBuilder.Entity<GradedAnswerSheet>()
                 .HasIndex(g => g.ExamId);
 
+            // ── AuditLog entity configuration ────────────────────────────
+            modelBuilder.Entity<AuditLog>().HasKey(a => a.Id);
+
+            modelBuilder.Entity<AuditLog>()
+                .Property(a => a.Id)
+                .ValueGeneratedOnAdd();
+
+            modelBuilder.Entity<AuditLog>()
+                .Property(a => a.UserId)
+                .HasMaxLength(50);
+
+            // Optional FK: an audit log may belong to a user (nullable — set null on delete)
+            modelBuilder.Entity<AuditLog>()
+                .HasOne<Auth>()
+                .WithMany()
+                .HasForeignKey(a => a.UserId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            modelBuilder.Entity<AuditLog>()
+                .HasIndex(a => a.UserId);
+
             base.OnModelCreating(modelBuilder);
         }
     }

@@ -94,7 +94,6 @@ namespace Project_OLMS.Controllers
                 // Fallback to Tesseract OCR below
             }
 
-            // 4. Fallback Scan Strategy: Tesseract OCR (Loop through pages if AI unavailable)
             if (scannedAnswers.Count == 0)
             {
                 var rawTextList = new List<string>();
@@ -122,8 +121,8 @@ namespace Project_OLMS.Controllers
                     if (!string.IsNullOrWhiteSpace(ocrText))
                     {
                         var lines = ocrText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-                        var regexAnswerFirst = new Regex(@"\b([A-Da-d])\s*[\.\_\-\)]*\s*(\d+)\b", RegexOptions.Compiled);
-                        var regexNumberFirst = new Regex(@"\b(\d+)\s*[\.\_\-\)]*\s*([A-Da-d])\b", RegexOptions.Compiled);
+                        var regexAnswerFirst = new Regex(@"\b([A-Da-d])\s*[\.\-_\)]*\s*(\d+)\b", RegexOptions.Compiled);
+                        // var regexNumberFirst = new Regex(@"\b(\d+)\s*[.\-)]*\s*([A-Da-d])\b", RegexOptions.Compiled); // Disabled: answers after number are not allowed
 
                         foreach (var line in lines)
                         {
@@ -140,15 +139,17 @@ namespace Project_OLMS.Controllers
                                 }
                             }
 
-                            var m2 = regexNumberFirst.Match(trimmed);
-                            if (m2.Success && int.TryParse(m2.Groups[1].Value, out int qNum2))
-                            {
-                                string answer = m2.Groups[2].Value.ToUpper();
-                                if (!scannedAnswers.ContainsKey(qNum2))
-                                {
-                                    scannedAnswers[qNum2] = answer;
-                                }
-                            }
+                            // The following pattern matches answers written after the question number (e.g., "1 A").
+// This format is NOT allowed by the exam instructions, so we intentionally ignore these matches.
+// var m2 = regexNumberFirst.Match(trimmed);
+// if (m2.Success && int.TryParse(m2.Groups[1].Value, out int qNum2))
+// {
+//     string answer = m2.Groups[2].Value.ToUpper();
+//     if (!scannedAnswers.ContainsKey(qNum2))
+//     {
+//         scannedAnswers[qNum2] = answer;
+//     }
+// }
                         }
                     }
                 }
@@ -203,10 +204,15 @@ namespace Project_OLMS.Controllers
             await context.SaveChangesAsync();
 
             string studentDisplay = string.IsNullOrWhiteSpace(studentName) ? "Anonymous" : studentName;
+            var currentUserId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                             ?? User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+            var currentUsername = User.FindFirst("username")?.Value;
+
             await auditLogService.LogDocumentExamAsync(
                 action: "Sheet Graded",
                 details: $"Graded student sheet for '{studentDisplay}' (Score: {correctCount}/{correctQuestions.Count}, {gradedSheet.ScorePercentage:F1}%, Exam ID: {examId})",
-                username: studentName,
+                userId: currentUserId,
+                username: currentUsername ?? studentDisplay,
                 ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
             );
 

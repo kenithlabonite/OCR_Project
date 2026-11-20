@@ -8,6 +8,7 @@ namespace Project_OLMS.Models
         [Key]
         public int Id { get; set; }
 
+        [StringLength(50)]
         public string? UserId { get; set; }
         public string? Username { get; set; }
 

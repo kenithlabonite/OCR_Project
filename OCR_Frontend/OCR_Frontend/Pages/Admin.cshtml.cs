@@ -30,6 +30,12 @@ namespace OCR_Frontend.Pages
 
         public async Task<IActionResult> OnGetAsync()
         {
+            var token = Request.Cookies["AuthToken"];
+            if (string.IsNullOrEmpty(token))
+            {
+                return RedirectToPage("/Login");
+            }
+
             // Check admin role
             var role = Request.Cookies["UserRole"];
             if (role != "Admin")
@@ -150,6 +156,12 @@ namespace OCR_Frontend.Pages
 
             // Load Users
             var usersResponse = await client.GetAsync("/api/admin/users");
+            if (usersResponse.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                OCR_Frontend.Helpers.AuthCookieHelper.ClearSessionCookies(Response);
+                Response.Redirect("/Login");
+                return;
+            }
             if (usersResponse.IsSuccessStatusCode)
             {
                 Users = await usersResponse.Content.ReadFromJsonAsync<List<UserDto>>() ?? new();
