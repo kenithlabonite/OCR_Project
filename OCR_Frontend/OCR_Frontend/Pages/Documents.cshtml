@@ -35,9 +35,17 @@
                         <i class="bi bi-folder2-open" style="color: #2563eb; font-size: 1rem;"></i>
                     </div>
                     <div>
-                        <p class="fw-bold mb-0" style="color: #1e293b; font-size: 1rem;">
-                            Document Library
-                        </p>
+                        <div class="d-flex align-items-center gap-2">
+                            <p class="fw-bold mb-0" style="color: #1e293b; font-size: 1rem;">
+                                Document Library
+                            </p>
+                            @if (Model.IsAdmin)
+                            {
+                                <span class="badge" style="background-color: #fff1f2; color: #e11d48; border: 1px solid #fda4af; font-size: 0.65rem; border-radius: 20px; padding: 2px 7px;">
+                                    <i class="bi bi-shield-check me-1"></i>ADMIN MODE
+                                </span>
+                            }
+                        </div>
                         <p class="mb-0" style="font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.07em;">
                             Uploaded Course Lessons &middot; Ingested Source PDFs
                         </p>
@@ -52,10 +60,18 @@
         <div style="height: 3px; background: linear-gradient(90deg, #2563eb, #60a5fa); border-radius: 0 0 0.375rem 0.375rem;"></div>
     </div>
 
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="d-flex align-items-center gap-2 p-3 rounded mb-3" style="background-color: #f0fdf4; border: 1.5px solid #86efac; color: #16a34a; font-size: 0.82rem;">
+            <i class="bi bi-check-circle-fill fs-5"></i>
+            <span>@Model.SuccessMessage</span>
+        </div>
+    }
+
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
         <div class="d-flex align-items-center gap-2 p-3 rounded mb-3" style="background-color: #fff1f2; border: 1.5px solid #fda4af; color: #e11d48; font-size: 0.82rem;">
-            <i class="bi bi-exclamation-triangle-fill"></i>
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
             <span>@Model.ErrorMessage</span>
         </div>
     }
@@ -75,9 +91,20 @@
                                 <i class="bi bi-collection-fill" style="color: #2563eb; font-size: 0.85rem;"></i>
                             </div>
                             <div>
-                                <p class="fw-bold mb-0" style="color: #1e293b; font-size: 0.92rem;">
-                                    @group.Key
-                                </p>
+                                <div class="d-flex align-items-center gap-2">
+                                    <p class="fw-bold mb-0" style="color: #1e293b; font-size: 0.92rem;">
+                                        @group.Key
+                                    </p>
+                                    @if (Model.IsAdmin)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none" title="Admin: Edit Batch Title" 
+                                                data-batch-title="@group.Key" 
+                                                onclick="event.stopPropagation(); openEditBatchModalFromButton(this);" 
+                                                style="color: #64748b; font-size: 0.85rem;">
+                                            <i class="bi bi-pencil-square text-primary"></i>
+                                        </button>
+                                    }
+                                </div>
                                 <p class="mb-0 text-muted" style="font-size: 0.75rem;">
                                     <span class="badge fw-semibold" style="background-color: #f1f5f9; color: #475569; font-size: 0.68rem; border-radius: 20px; padding: 2px 8px;">
                                         @group.Count() @(group.Count() == 1 ? "file" : "files")
@@ -88,7 +115,17 @@
                         </div>
 
                         <div class="d-flex align-items-center gap-2">
-                            <a href="/GenerateQuestionnaire?topic=@Uri.EscapeDataString(group.Key)" class="btn fw-semibold d-inline-flex align-items-center gap-1.5 btn-cc-purple" style="background-color: #fdf4ff; color: #9333ea; border: 1.5px solid #d8b4fe; border-radius: 8px; font-size: 0.72rem; padding: 5px 12px;">
+                            @if (Model.IsAdmin)
+                            {
+                                <!-- <button type="button" class="btn fw-semibold d-inline-flex align-items-center gap-1.5 btn-sm btn-outline-secondary" 
+                                        data-batch-title="@group.Key" 
+                                        onclick="openEditBatchModalFromButton(this);" 
+                                        title="Admin: Edit Batch Title" 
+                                        style="border-radius: 8px; font-size: 0.72rem; padding: 5px 10px; height: 32px;">
+                                    <i class="bi bi-pencil-square text-primary"></i> Edit Batch Title
+                                </button> -->
+                            }
+                            <a href="/GenerateQuestionnaire?topic=@Uri.EscapeDataString(group.Key)" class="btn fw-semibold d-inline-flex align-items-center gap-1.5 btn-cc-purple" style="background-color: #fdf4ff; color: #9333ea; border: 1.5px solid #d8b4fe; border-radius: 8px; font-size: 0.72rem; padding: 5px 12px; height: 32px;">
                                 <i class="bi bi-magic" style="font-size: 0.80rem;"></i> Generate Exam
                             </a>
                             <button type="button" class="btn btn-sm border-0 p-1 text-muted" data-bs-toggle="collapse" data-bs-target="#@groupId" aria-label="Toggle files">
@@ -137,12 +174,26 @@
                                             </span>
                                         </td>
                                         <td class="text-end pe-4">
-                                            <form method="post" asp-page-handler="Download" class="d-inline">
-                                                <input type="hidden" name="id" value="@doc.Id" />
-                                                <button type="submit" class="btn btn-sm fw-semibold d-inline-flex align-items-center gap-1 btn-cc-blue" title="Download Original PDF" style="background-color: #eff6ff; color: #2563eb; border: 1.5px solid #93c5fd; border-radius: 6px; font-size: 0.72rem; padding: 2px 8px;">
-                                                    <i class="bi bi-download" style="font-size: 0.70rem;"></i> Download
-                                                </button>
-                                            </form>
+                                            <div class="d-flex align-items-center justify-content-end gap-1.5">
+                                                @if (Model.IsAdmin)
+                                                {
+                                                    <button type="button" class="btn btn-sm fw-semibold d-inline-flex align-items-center gap-1 btn-outline-secondary" 
+                                                            data-doc-id="@doc.Id" 
+                                                            data-doc-filename="@doc.FileName" 
+                                                            data-doc-batch="@(doc.BatchTitle ?? "")" 
+                                                            onclick="openEditDocModalFromButton(this);" 
+                                                            title="Admin: Edit Batch for this document" 
+                                                            style="border-radius: 6px; font-size: 0.72rem; padding: 2px 8px;">
+                                                        <i class="bi bi-pencil" style="font-size: 0.70rem;"></i> Edit Batch
+                                                    </button>
+                                                }
+                                                <form method="post" asp-page-handler="Download" class="d-inline">
+                                                    <input type="hidden" name="id" value="@doc.Id" />
+                                                    <button type="submit" class="btn btn-sm fw-semibold d-inline-flex align-items-center gap-1 btn-cc-blue" title="Download Original PDF" style="background-color: #eff6ff; color: #2563eb; border: 1.5px solid #93c5fd; border-radius: 6px; font-size: 0.72rem; padding: 2px 8px;">
+                                                        <i class="bi bi-download" style="font-size: 0.70rem;"></i> Download
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </td>
                                     </tr>
                                 }
@@ -174,4 +225,115 @@
         </div>
     }
 
+    <!-- ── Admin Only Modals ── -->
+    @if (Model.IsAdmin)
+    {
+        <!-- Edit Entire Batch Title Modal -->
+        <div class="modal fade" id="editBatchTitleModal" tabindex="-1" aria-labelledby="editBatchTitleModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                    <form method="post" asp-page-handler="UpdateBatchTitle">
+                        <div class="modal-header text-white border-0 py-3" style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
+                            <h5 class="modal-title fw-bold text-white mb-0" id="editBatchTitleModalLabel">
+                                <i class="bi bi-pencil-square me-2"></i>Edit Batch Title
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <input type="hidden" id="modalOldBatchTitle" name="oldTitle" />
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.70rem;">Current Batch Title</label>
+                                <div class="p-2 rounded bg-light border text-dark fw-semibold" id="modalCurrentBatchTitleDisplay" style="font-size: 0.88rem;"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="modalNewBatchTitle" class="form-label fw-semibold" style="font-size: 0.85rem; color: #1e293b;">
+                                    New Batch Title / Subject <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="modalNewBatchTitle" name="newTitle" class="form-control" placeholder="e.g. Science 10 - Quarter 1" required style="border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;" />
+                                <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                                    Updating this will rename the batch title across all documents grouped under this title.
+                                </small>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 bg-light py-2 px-4">
+                            <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold" style="border-radius: 6px;">
+                                <i class="bi bi-check2 me-1"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Single Document Batch Title Modal -->
+        <div class="modal fade" id="editDocBatchModal" tabindex="-1" aria-labelledby="editDocBatchModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                    <form method="post" asp-page-handler="UpdateDocumentBatchTitle">
+                        <div class="modal-header text-white border-0 py-3" style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
+                            <h5 class="modal-title fw-bold text-white mb-0" id="editDocBatchModalLabel">
+                                <i class="bi bi-file-earmark-text me-2"></i>Edit Document Batch Title
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <input type="hidden" id="modalDocId" name="id" />
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-semibold text-uppercase" style="letter-spacing: 0.05em; font-size: 0.70rem;">File Name</label>
+                                <div class="p-2 rounded bg-light border text-dark fw-semibold" id="modalDocFileNameDisplay" style="font-size: 0.85rem;"></div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="modalDocBatchTitle" class="form-label fw-semibold" style="font-size: 0.85rem; color: #1e293b;">
+                                    Batch Title / Subject
+                                </label>
+                                <input type="text" id="modalDocBatchTitle" name="batchTitle" class="form-control" placeholder="e.g. Science 10 - Quarter 1" style="border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 0.85rem;" />
+                                <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                                    Assigns or moves this document to a specific batch title.
+                                </small>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 bg-light py-2 px-4">
+                            <button type="button" class="btn btn-secondary btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary btn-sm px-4 fw-semibold" style="border-radius: 6px;">
+                                <i class="bi bi-check2 me-1"></i> Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+
 </div>
+
+@section Scripts {
+    @if (Model.IsAdmin)
+    {
+        <script>
+            function openEditBatchModalFromButton(btn) {
+                var title = btn.getAttribute('data-batch-title') || '';
+                document.getElementById('modalOldBatchTitle').value = title;
+                document.getElementById('modalCurrentBatchTitleDisplay').textContent = title;
+                document.getElementById('modalNewBatchTitle').value = title;
+                var modal = new bootstrap.Modal(document.getElementById('editBatchTitleModal'));
+                modal.show();
+            }
+
+            function openEditDocModalFromButton(btn) {
+                var id = btn.getAttribute('data-doc-id');
+                var filename = btn.getAttribute('data-doc-filename') || '';
+                var batch = btn.getAttribute('data-doc-batch') || '';
+                document.getElementById('modalDocId').value = id;
+                document.getElementById('modalDocFileNameDisplay').textContent = filename;
+                document.getElementById('modalDocBatchTitle').value = batch;
+                var modal = new bootstrap.Modal(document.getElementById('editDocBatchModal'));
+                modal.show();
+            }
+        </script>
+    }
+}

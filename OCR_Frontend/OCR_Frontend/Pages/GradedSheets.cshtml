@@ -4,240 +4,405 @@
     ViewData["Title"] = "Graded Student Answer Sheets";
 }
 
-<div class="container mt-4">
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a asp-page="/Dashboard">Dashboard</a></li>
-            <li class="breadcrumb-item"><a asp-page="/Questionnaires">Questionnaires</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Graded Student Sheets</li>
-        </ol>
-    </nav>
+<div class="container-fluid px-3 px-md-4 mt-3">
+    <!-- Breadcrumb Card -->
+    <div class="card border-0 shadow-sm mb-3">
+        <div class="card-body py-2 px-3">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0" style="font-size: 0.85rem;">
+                    <li class="breadcrumb-item"><a href="/Dashboard" class="text-decoration-none" style="color: #2563eb;">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="/Questionnaires" class="text-decoration-none" style="color: #2563eb;">Questionnaires</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <span style="font-weight: 600; color: #1e293b;">Graded Student Sheets</span>
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
 
-    <!-- Header Banner -->
-    <div class="glass-panel p-4 mb-4 border-0 shadow-sm rounded-4 position-relative overflow-hidden bg-gradient" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);">
-        <div class="row align-items-center">
-            <div class="col-md-8">
-                <h1 class="display-6 fw-bold mb-2" style="background: linear-gradient(to right, #059669, #2563eb); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                    <i class="bi bi-file-earmark-check-fill me-2" style="-webkit-text-fill-color: #059669;"></i>Graded Student Answer Sheets
-                </h1>
-                <p class="text-muted fs-5 mb-0">Browse and inspect AI-graded answer sheets, student names, scores, and OCR answer breakdowns.</p>
-            </div>
-            <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                <span class="badge bg-success-subtle text-success border border-success-subtle p-2 px-3 rounded-pill fs-6">
-                    <i class="bi bi-check-all me-1"></i> @Model.TotalSheets Total Graded
-                </span>
+    <!-- Page Header Banner -->
+    <div class="card border-0 shadow-sm mb-4 overflow-hidden position-relative" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.08) 100%);">
+        <div class="card-body px-4 py-4">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 48px; height: 48px; background: linear-gradient(135deg, #10b981, #059669); color: white; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+                        <i class="bi bi-file-earmark-check-fill fs-4"></i>
+                    </div>
+                    <div>
+                        <h4 class="fw-bold mb-1" style="color: #0f172a; font-size: 1.35rem;">
+                            Graded Student Submissions &amp; Scores
+                        </h4>
+                        <p class="mb-0 text-muted" style="font-size: 0.82rem;">
+                            Organized by Batch Title and Subject &middot; Inspect AI-graded test papers, score breakdowns, and student OCR answers
+                        </p>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge px-3 py-2 rounded-pill fw-semibold" style="background-color: #ecfdf5; color: #059669; border: 1.5px solid #a7f3d0; font-size: 0.82rem;">
+                        <i class="bi bi-collection me-1"></i> @Model.TotalBatches @(Model.TotalBatches == 1 ? "Batch" : "Batches")
+                    </span>
+                    <span class="badge px-3 py-2 rounded-pill fw-semibold" style="background-color: #eff6ff; color: #2563eb; border: 1.5px solid #bfdbfe; font-size: 0.82rem;">
+                        <i class="bi bi-check2-all me-1"></i> @Model.TotalSheets Total Submissions
+                    </span>
+                </div>
             </div>
         </div>
+        <div style="height: 3px; background: linear-gradient(90deg, #10b981, #3b82f6); border-radius: 0 0 0.375rem 0.375rem;"></div>
     </div>
 
     @if (!string.IsNullOrEmpty(Model.ErrorMessage))
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i> @Model.ErrorMessage
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="d-flex align-items-center gap-2 p-3 rounded mb-4" style="background-color: #fff1f2; border: 1.5px solid #fda4af; color: #e11d48; font-size: 0.85rem;">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <span>@Model.ErrorMessage</span>
         </div>
     }
 
     <!-- Stat Cards Row -->
     <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card glass-panel border-0 shadow-sm">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-3 text-center">
-                    <div class="text-primary fs-2 fw-bold">@Model.TotalSheets</div>
-                    <small class="text-muted"><i class="bi bi-people me-1"></i>Graded Answer Sheets</small>
+                    <p class="text-uppercase fw-semibold mb-1" style="font-size: 0.70rem; letter-spacing: 0.06em; color: #64748b;">
+                        <i class="bi bi-collection-fill me-1 text-primary"></i> Total Batches
+                    </p>
+                    <div class="fs-2 fw-bold" style="color: #2563eb;">@Model.TotalBatches</div>
+                    <small class="text-muted" style="font-size: 0.72rem;">Active Subjects / Topics</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card glass-panel border-0 shadow-sm">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-3 text-center">
-                    <div class="text-success fs-2 fw-bold">@Model.AverageScore.ToString("0.0")%</div>
-                    <small class="text-muted"><i class="bi bi-graph-up me-1"></i>Average Class Score</small>
+                    <p class="text-uppercase fw-semibold mb-1" style="font-size: 0.70rem; letter-spacing: 0.06em; color: #64748b;">
+                        <i class="bi bi-people-fill me-1 text-info"></i> Graded Sheets
+                    </p>
+                    <div class="fs-2 fw-bold" style="color: #0284c7;">@Model.TotalSheets</div>
+                    <small class="text-muted" style="font-size: 0.72rem;">Student Test Papers</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card glass-panel border-0 shadow-sm">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-3 text-center">
-                    <div class="text-success fs-2 fw-bold">@Model.PassedCount</div>
-                    <small class="text-muted"><i class="bi bi-hand-thumbs-up me-1"></i>Passed (≥50%)</small>
+                    <p class="text-uppercase fw-semibold mb-1" style="font-size: 0.70rem; letter-spacing: 0.06em; color: #64748b;">
+                        <i class="bi bi-graph-up me-1 text-success"></i> Class Average
+                    </p>
+                    <div class="fs-2 fw-bold" style="color: #16a34a;">@Model.AverageScore.ToString("0.0")%</div>
+                    <small class="text-muted" style="font-size: 0.72rem;">Overall Performance</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card glass-panel border-0 shadow-sm">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body p-3 text-center">
-                    <div class="text-danger fs-2 fw-bold">@Model.FailedCount</div>
-                    <small class="text-muted"><i class="bi bi-exclamation-circle me-1"></i>Needs Review (&lt;50%)</small>
+                    <p class="text-uppercase fw-semibold mb-1" style="font-size: 0.70rem; letter-spacing: 0.06em; color: #64748b;">
+                        <i class="bi bi-shield-check me-1 text-warning"></i> Pass / Review
+                    </p>
+                    <div class="fs-2 fw-bold">
+                        <span style="color: #16a34a;">@Model.PassedCount</span>
+                        <span class="text-muted fs-5 fw-normal">/</span>
+                        <span style="color: #e11d48;">@Model.FailedCount</span>
+                    </div>
+                    <small class="text-muted" style="font-size: 0.72rem;">Passed (≥50%) vs Review</small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Filter & Search Bar -->
-    <div class="card glass-panel border-0 shadow-sm mb-4">
+    <!-- Filter & Controls Toolbar -->
+    <div class="card border-0 shadow-sm mb-4">
         <div class="card-body p-3">
             <div class="row g-2 align-items-center">
-                <div class="col-md-6">
-                    <div class="input-group">
-                        <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search by student name or document name..." onkeyup="filterTable()" />
+                <!-- Search input -->
+                <div class="col-12 col-md-5">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white border-end-0" style="border: 1.5px solid #e2e8f0; border-right: none;"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="searchInput" class="form-control border-start-0" placeholder="Search by student name, batch, or document..." onkeyup="applyFilters()" style="border: 1.5px solid #e2e8f0; border-left: none; font-size: 0.85rem;" />
                     </div>
                 </div>
-                <div class="col-md-6 text-md-end">
-                    @if (Model.SelectedExamId.HasValue)
-                    {
-                        <span class="badge bg-primary-subtle text-primary me-2 p-2 px-3 rounded-pill">
-                            Filtered by Exam #@Model.SelectedExamId
+
+                <!-- Batch / Subject selector filter -->
+                <div class="col-12 col-md-4">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white" style="border: 1.5px solid #e2e8f0; font-size: 0.78rem; color: #64748b;">
+                            <i class="bi bi-funnel me-1"></i> Batch:
                         </span>
-                        <a asp-page="/GradedSheets" class="btn btn-sm btn-outline-secondary">Show All Exams</a>
-                    }
-                    <button class="btn btn-sm btn-outline-primary" onclick="document.getElementById('searchInput').value=''; filterTable();">
-                        <i class="bi bi-arrow-clockwise me-1"></i>Reset Filter
+                        <select id="batchSelectFilter" class="form-select form-select-sm" onchange="applyFilters()" style="border: 1.5px solid #e2e8f0; font-size: 0.85rem;">
+                            <option value="">All Batches &amp; Subjects (@Model.BatchGroups.Count)</option>
+                            @foreach (var bg in Model.BatchGroups)
+                            {
+                                <option value="@bg.BatchTitle">@bg.BatchTitle (@bg.TotalSheets)</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="col-12 col-md-3 text-md-end d-flex align-items-center justify-content-md-end gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" onclick="toggleAllBatches(true)" title="Expand all batches" style="font-size: 0.75rem;">
+                        <i class="bi bi-arrows-expand"></i> Expand All
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1" onclick="toggleAllBatches(false)" title="Collapse all batches" style="font-size: 0.75rem;">
+                        <i class="bi bi-arrows-collapse"></i> Collapse All
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" onclick="resetFilters()" title="Reset all filters" style="font-size: 0.75rem;">
+                        <i class="bi bi-arrow-clockwise"></i> Reset
                     </button>
                 </div>
             </div>
+
+            @if (Model.SelectedExamId.HasValue)
+            {
+                <div class="mt-2 pt-2 border-top d-flex align-items-center gap-2" style="font-size: 0.80rem;">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1 rounded-pill">
+                        <i class="bi bi-filter me-1"></i> Filtered by Exam #@Model.SelectedExamId
+                    </span>
+                    <a asp-page="/GradedSheets" class="text-decoration-none fw-semibold" style="color: #2563eb;">Show All Exams &rarr;</a>
+                </div>
+            }
         </div>
     </div>
 
-    <!-- Graded Sheets Table Card -->
-    <div class="card glass-panel border-0 shadow-sm mb-5">
-        <div class="card-body p-4">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="card-title mb-0"><i class="bi bi-journal-check text-primary me-2"></i>Student Submissions &amp; Scores</h5>
-                <span class="text-muted small">Showing @Model.GradedSheets.Count recorded test papers</span>
-            </div>
+    <!-- ── Student Submissions & Scores Grouped by Batch ── -->
+    <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+        <div>
+            <h5 class="fw-bold mb-0" style="color: #1e293b; font-size: 1.1rem;">
+                <i class="bi bi-collection-fill text-primary me-2"></i>Student Submissions &amp; Scores by Batch
+            </h5>
+            <p class="text-muted small mb-0">Grouped by Subject or Batch Title &middot; Each batch contains scored student answer sheets</p>
+        </div>
+        <span id="batchCountBadge" class="badge bg-light text-muted border px-2.5 py-1.5" style="font-size: 0.75rem;">
+            Showing @Model.BatchGroups.Count @(Model.BatchGroups.Count == 1 ? "batch" : "batches")
+        </span>
+    </div>
 
-            @if (!Model.GradedSheets.Any())
+    @if (!Model.BatchGroups.Any())
+    {
+        <div class="card border-0 shadow-sm p-5 text-center my-4">
+            <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px; background-color: #f1f5f9; color: #94a3b8;">
+                <i class="bi bi-inbox fs-2"></i>
+            </div>
+            <h5 class="fw-bold text-dark">No graded answer sheets stored yet</h5>
+            <p class="text-muted small mx-auto" style="max-width: 440px;">
+                Upload a student answer sheet from any generated questionnaire or exam to have the OCR engine grade it automatically.
+            </p>
+            <div>
+                <a href="/Questionnaires" class="btn btn-primary btn-sm px-4 fw-semibold" style="border-radius: 8px;">
+                    <i class="bi bi-journal-text me-1"></i> Go to Questionnaires
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Batch Group Cards Loop -->
+        <div id="batchesContainer">
+            @foreach (var batch in Model.BatchGroups)
             {
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-inbox fs-1 text-secondary"></i>
-                    <p class="mt-2 fs-5">No graded answer sheets stored yet.</p>
-                    <p class="small">Upload a student answer sheet from an exam page to start grading!</p>
-                    <a asp-page="/Questionnaires" class="btn btn-primary btn-sm px-4">Go to Questionnaires</a>
-                </div>
-            }
-            else
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0" id="gradedTable">
-                        <thead class="table-light">
-                            <tr>
-                                <th># ID</th>
-                                <th>Student Name</th>
-                                <th>Title / Topic</th>
-                                <th class="text-center">Score</th>
-                                <th class="text-center">Percentage</th>
-                                <th>Graded Date</th>
-                                <th class="text-center">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var sheet in Model.GradedSheets)
-                            {
-                                <tr>
-                                    <td><code>#@sheet.Id</code></td>
-                                    <td>
-                                        <div class="d-flex align-items-center gap-2">
-                                            <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                                                <i class="bi bi-person-fill fs-5"></i>
-                                            </div>
-                                            <div>
-                                                @if (!string.IsNullOrWhiteSpace(sheet.StudentName))
+                var batchId = "batch-" + Math.Abs(batch.BatchTitle.GetHashCode());
+                var avgColor = batch.AverageScore >= 75.0 ? "#16a34a" : (batch.AverageScore >= 50.0 ? "#2563eb" : "#e11d48");
+                var avgBg = batch.AverageScore >= 75.0 ? "#f0fdf4" : (batch.AverageScore >= 50.0 ? "#eff6ff" : "#fff1f2");
+                var avgBorder = batch.AverageScore >= 75.0 ? "#86efac" : (batch.AverageScore >= 50.0 ? "#93c5fd" : "#fda4af");
+
+                <div class="card border-0 shadow-sm mb-4 batch-card" data-batch-title="@batch.BatchTitle.ToLower()">
+                    <!-- Batch Card Header -->
+                    <div class="card-body px-4 py-3" style="background-color: #ffffff; border-bottom: 1px solid #f1f5f9;">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                            <!-- Left: Title, Stats & Collapse Toggle -->
+                            <div class="d-flex align-items-center gap-3" style="cursor: pointer;" data-bs-toggle="collapse" data-bs-target="#@batchId" aria-expanded="true" aria-controls="@batchId">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 40px; height: 40px; background-color: #eff6ff;">
+                                    <i class="bi bi-collection-fill" style="color: #2563eb; font-size: 1rem;"></i>
+                                </div>
+                                <div>
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                                        <h5 class="fw-bold mb-0 batch-title-heading" style="color: #1e293b; font-size: 1.02rem;">
+                                            @batch.BatchTitle
+                                        </h5>
+                                        <span class="badge fw-semibold" style="background-color: #f1f5f9; color: #475569; font-size: 0.70rem; border-radius: 20px; padding: 2px 10px;">
+                                            <i class="bi bi-people me-1"></i>@batch.TotalSheets @(batch.TotalSheets == 1 ? "student" : "students")
+                                        </span>
+                                        <span class="badge fw-semibold" style="background-color: @avgBg; color: @avgColor; border: 1px solid @avgBorder; font-size: 0.70rem; border-radius: 20px; padding: 2px 10px;">
+                                            <i class="bi bi-graph-up me-1"></i>Avg: @batch.AverageScore.ToString("0.0")%
+                                        </span>
+                                    </div>
+                                    <p class="mb-0 text-muted" style="font-size: 0.75rem;">
+                                        <span class="text-success fw-medium"><i class="bi bi-check-circle me-1"></i>@batch.PassedCount Passed</span>
+                                        @if (batch.FailedCount > 0)
+                                        {
+                                            <span class="text-danger fw-medium ms-2"><i class="bi bi-exclamation-circle me-1"></i>@batch.FailedCount Needs Review</span>
+                                        }
+                                        &middot; <span class="text-muted"><i class="bi bi-clock me-1"></i>Latest: @batch.LatestGradedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Right: Actions -->
+                            <div class="d-flex align-items-center gap-2">
+                                <a href="/GradeExam?examId=@batch.ExamId" class="btn fw-semibold d-inline-flex align-items-center gap-1.5 btn-sm btn-cc-blue" style="background-color: #eff6ff; color: #2563eb; border: 1.5px solid #93c5fd; border-radius: 8px; font-size: 0.75rem; padding: 5px 12px;">
+                                    <i class="bi bi-plus-circle" style="font-size: 0.85rem;"></i> Grade More Sheets
+                                </a>
+                                <button type="button" class="btn btn-sm btn-light border p-1 px-2 text-muted" data-bs-toggle="collapse" data-bs-target="#@batchId" aria-label="Toggle batch submissions">
+                                    <i class="bi bi-chevron-down" style="font-size: 0.85rem;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Batch Submissions Table (Collapsible) -->
+                    <div id="@batchId" class="collapse show batch-collapse">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 batch-table">
+                                <thead style="background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;">
+                                    <tr>
+                                        <th class="ps-4" style="font-size: 0.72rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; width: 85px;"># ID</th>
+                                        <th style="font-size: 0.72rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">Student Name</th>
+                                        <th style="font-size: 0.72rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">Source Document / Exam</th>
+                                        <th class="text-center" style="font-size: 0.72rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; width: 110px;">Score</th>
+                                        <th class="text-center" style="font-size: 0.72rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; width: 130px;">Percentage</th>
+                                        <th style="font-size: 0.72rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; width: 160px;">Graded Date</th>
+                                        <th class="text-center pe-4" style="font-size: 0.72rem; color: #64748b; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; width: 140px;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var sheet in batch.Sheets)
+                                    {
+                                        <tr class="submission-row" style="border-bottom: 1px solid #f1f5f9;">
+                                            <td class="ps-4">
+                                                <code class="fw-semibold" style="color: #64748b; font-size: 0.80rem;">#@sheet.Id</code>
+                                            </td>
+                                            <td class="student-name-cell">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 32px; height: 32px; background-color: #f1f5f9; color: #475569;">
+                                                        <i class="bi bi-person-fill" style="font-size: 0.90rem;"></i>
+                                                    </div>
+                                                    <div>
+                                                        @if (!string.IsNullOrWhiteSpace(sheet.StudentName))
+                                                        {
+                                                            <span class="fw-bold text-dark d-block" style="font-size: 0.85rem;">@sheet.StudentName</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted italic d-block" style="font-size: 0.82rem;">Anonymous Student</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="document-name-cell">
+                                                <div class="d-flex align-items-center gap-1.5" style="font-size: 0.82rem; color: #475569;">
+                                                    <i class="bi bi-file-earmark-pdf text-danger" style="font-size: 0.85rem;"></i>
+                                                    <span class="text-truncate" style="max-width: 250px;" title="@sheet.DocumentFileName">@sheet.DocumentFileName</span>
+                                                    <span class="badge bg-light text-muted border ms-1" style="font-size: 0.65rem;">Exam #@sheet.ExamId</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-center fw-bold" style="font-size: 0.88rem; color: #1e293b;">
+                                                @sheet.CorrectCount <span class="text-muted fw-normal" style="font-size: 0.78rem;">/ @sheet.TotalQuestions</span>
+                                            </td>
+                                            <td class="text-center">
+                                                @if (sheet.ScorePercentage >= 75)
                                                 {
-                                                    <span class="fw-bold text-dark d-block">@sheet.StudentName</span>
+                                                    <span class="badge px-2.5 py-1.5 rounded-pill fw-semibold" style="background-color: #ecfdf5; color: #059669; border: 1px solid #a7f3d0; font-size: 0.78rem;">
+                                                        <i class="bi bi-check-circle-fill me-1"></i>@sheet.ScorePercentage.ToString("0.0")%
+                                                    </span>
+                                                }
+                                                else if (sheet.ScorePercentage >= 50)
+                                                {
+                                                    <span class="badge px-2.5 py-1.5 rounded-pill fw-semibold" style="background-color: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; font-size: 0.78rem;">
+                                                        <i class="bi bi-check-circle me-1"></i>@sheet.ScorePercentage.ToString("0.0")%
+                                                    </span>
                                                 }
                                                 else
                                                 {
-                                                    <span class="text-muted italic d-block">Anonymous Student</span>
+                                                    <span class="badge px-2.5 py-1.5 rounded-pill fw-semibold" style="background-color: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; font-size: 0.78rem;">
+                                                        <i class="bi bi-x-circle me-1"></i>@sheet.ScorePercentage.ToString("0.0")%
+                                                    </span>
                                                 }
-                                            </div>
-                                        </div>
-                                    </td>
-                                     <td>
-                                         <div class="d-flex align-items-center gap-2">
-                                             <i class="bi bi-journal-bookmark-fill text-primary fs-5"></i>
-                                             <span class="fw-medium text-dark">@sheet.DocumentFileName</span>
-                                         </div>
-                                     </td>
-                                    <td class="text-center fw-bold fs-6">
-                                        @sheet.CorrectCount / @sheet.TotalQuestions
-                                    </td>
-                                    <td class="text-center">
-                                        @if (sheet.ScorePercentage >= 75)
-                                        {
-                                            <span class="badge bg-success px-3 py-2 fs-6 rounded-pill">
-                                                <i class="bi bi-check-circle-fill me-1"></i>@sheet.ScorePercentage.ToString("0.0")%
-                                            </span>
-                                        }
-                                        else if (sheet.ScorePercentage >= 50)
-                                        {
-                                            <span class="badge bg-primary px-3 py-2 fs-6 rounded-pill">
-                                                <i class="bi bi-check-circle me-1"></i>@sheet.ScorePercentage.ToString("0.0")%
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger px-3 py-2 fs-6 rounded-pill">
-                                                <i class="bi bi-x-circle me-1"></i>@sheet.ScorePercentage.ToString("0.0")%
-                                            </span>
-                                        }
-                                    </td>
-                                    <td class="text-muted small">
-                                        <i class="bi bi-clock me-1"></i>@sheet.GradedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
-                                    </td>
-                                    <td class="text-center">
-                                        <button type="button" class="btn btn-outline-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#modal-@sheet.Id">
-                                            <i class="bi bi-eye me-1"></i> View Answers
-                                        </button>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                                            </td>
+                                            <td class="text-muted small" style="font-size: 0.78rem;">
+                                                <i class="bi bi-clock me-1 text-muted"></i>@sheet.GradedAt.ToLocalTime().ToString("MMM dd, yyyy HH:mm")
+                                            </td>
+                                            <td class="text-center pe-4">
+                                                <button type="button" class="btn btn-outline-primary btn-sm px-2.5 py-1 fw-semibold d-inline-flex align-items-center gap-1" data-bs-toggle="modal" data-bs-target="#modal-@sheet.Id" style="font-size: 0.75rem; border-radius: 6px;">
+                                                    <i class="bi bi-eye"></i> View Answers
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             }
         </div>
-    </div>
 
-    @* ── Modals rendered OUTSIDE the table so Bootstrap can display them properly ── *@
+        <!-- No matching search message -->
+        <div id="noResultsMsg" class="card border-0 shadow-sm p-4 text-center d-none my-3">
+            <i class="bi bi-search text-muted fs-3 mb-2"></i>
+            <h6 class="fw-bold text-dark">No matching submissions found</h6>
+            <p class="text-muted small mb-2">Try adjusting your search terms or batch filter.</p>
+            <div>
+                <button type="button" class="btn btn-sm btn-outline-primary" onclick="resetFilters()">Reset Filter</button>
+            </div>
+        </div>
+    }
+
+    <!-- ── Modals rendered outside tables so Bootstrap displays cleanly ── -->
     @if (Model.GradedSheets.Any())
     {
         foreach (var sheet in Model.GradedSheets)
         {
             <div class="modal fade" id="modal-@sheet.Id" tabindex="-1" aria-labelledby="modalLabel-@sheet.Id" aria-hidden="true">
                 <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                    <div class="modal-content glass-panel border-0 shadow-lg">
-                        <div class="modal-header bg-gradient-primary text-white border-0 py-3" style="background: linear-gradient(135deg, var(--primary-color), #8b5cf6);">
-                            <h5 class="modal-title fw-bold text-white" id="modalLabel-@sheet.Id">
-                                <i class="bi bi-award me-2"></i>Grading Details — @(string.IsNullOrWhiteSpace(sheet.StudentName) ? "Anonymous Student" : sheet.StudentName)
-                            </h5>
+                    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                        <div class="modal-header text-white border-0 py-3" style="background: linear-gradient(135deg, #2563eb, #7c3aed);">
+                            <div>
+                                <h5 class="modal-title fw-bold text-white mb-0" id="modalLabel-@sheet.Id">
+                                    <i class="bi bi-award me-2"></i>Grading Details &mdash; @(string.IsNullOrWhiteSpace(sheet.StudentName) ? "Anonymous Student" : sheet.StudentName)
+                                </h5>
+                                <div class="small opacity-75 mt-0.5">
+                                    <i class="bi bi-collection me-1"></i>Batch: @sheet.BatchOrSubject
+                                </div>
+                            </div>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body p-4 text-start">
                             <!-- Student Summary Header inside Modal -->
-                            <div class="card bg-light border-0 mb-4 p-3 rounded-3">
+                            <div class="card border-0 mb-4 p-3 rounded-3" style="background-color: #f8fafc; border: 1.5px solid #e2e8f0 !important;">
                                 <div class="row align-items-center">
-                                    <div class="col-md-6">
-                                        <p class="mb-1 text-muted small">Student Name</p>
-                                        <h5 class="fw-bold mb-0 text-dark">@(string.IsNullOrWhiteSpace(sheet.StudentName) ? "Anonymous Student" : sheet.StudentName)</h5>
-                                        <small class="text-muted"><i class="bi bi-journal-bookmark me-1"></i>@sheet.DocumentFileName</small>
+                                    <div class="col-md-7">
+                                        <p class="mb-1 text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.05em; font-size: 0.70rem;">Student Name</p>
+                                        <h5 class="fw-bold mb-1 text-dark">@(string.IsNullOrWhiteSpace(sheet.StudentName) ? "Anonymous Student" : sheet.StudentName)</h5>
+                                        <div class="small text-muted d-flex align-items-center gap-2">
+                                            <span><i class="bi bi-collection text-primary me-1"></i><strong>@sheet.BatchOrSubject</strong></span>
+                                            <span>&middot;</span>
+                                            <span><i class="bi bi-file-earmark-pdf text-danger me-1"></i>@sheet.DocumentFileName</span>
+                                        </div>
                                     </div>
-                                    <div class="col-md-6 text-md-end mt-2 mt-md-0">
+                                    <div class="col-md-5 text-md-end mt-3 mt-md-0">
                                         <span class="display-6 fw-bold text-primary">@sheet.CorrectCount / @sheet.TotalQuestions</span>
-                                        <span class="d-block text-muted small">Score: <strong>@sheet.ScorePercentage.ToString("0.0")%</strong></span>
+                                        <span class="d-block text-muted small">
+                                            Score: <strong>@sheet.ScorePercentage.ToString("0.0")%</strong>
+                                            @if (sheet.ScorePercentage >= 50)
+                                            {
+                                                <span class="badge bg-success-subtle text-success ms-1">PASSED</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger-subtle text-danger ms-1">NEEDS REVIEW</span>
+                                            }
+                                        </span>
                                     </div>
                                 </div>
                             </div>
 
                             <!-- Item Breakdown -->
-                            <h6 class="fw-bold mb-3"><i class="bi bi-list-check text-primary me-2"></i>Question Item Breakdown</h6>
+                            <h6 class="fw-bold mb-3" style="color: #1e293b;"><i class="bi bi-list-check text-primary me-2"></i>Question Item Breakdown</h6>
                             @if (sheet.Results != null && sheet.Results.Any())
                             {
                                 <div class="table-responsive mb-4">
                                     <table class="table table-bordered align-middle">
-                                        <thead class="table-light text-center">
+                                        <thead class="text-center" style="background-color: #f8fafc; font-size: 0.75rem; text-transform: uppercase; color: #64748b;">
                                             <tr>
                                                 <th style="width: 15%;">Item #</th>
                                                 <th style="width: 35%;">Scanned Student Answer</th>
@@ -253,7 +418,7 @@
                                                     <td class="text-center fs-6">
                                                         @if (!string.IsNullOrEmpty(item.ScannedAnswer))
                                                         {
-                                                            <span class="badge bg-secondary-subtle text-dark border px-3 py-1">@item.ScannedAnswer</span>
+                                                            <span class="badge bg-secondary-subtle text-dark border px-3 py-1 font-monospace">@item.ScannedAnswer</span>
                                                         }
                                                         else
                                                         {
@@ -261,7 +426,7 @@
                                                         }
                                                     </td>
                                                     <td class="text-center fs-6">
-                                                        <span class="badge bg-primary-subtle text-primary border px-3 py-1">@item.CorrectAnswer</span>
+                                                        <span class="badge bg-primary-subtle text-primary border px-3 py-1 font-monospace">@item.CorrectAnswer</span>
                                                     </td>
                                                     <td class="text-center">
                                                         @if (item.IsCorrect)
@@ -287,7 +452,7 @@
                             <!-- Uploaded Answer Sheet Images -->
                             @if (sheet.ImageUrls != null && sheet.ImageUrls.Any())
                             {
-                                <h6 class="fw-bold mb-3 mt-4"><i class="bi bi-images text-info me-2"></i>Uploaded Answer Sheet (@sheet.ImageUrls.Count page(s))</h6>
+                                <h6 class="fw-bold mb-3 mt-4" style="color: #1e293b;"><i class="bi bi-images text-info me-2"></i>Uploaded Answer Sheet (@sheet.ImageUrls.Count page(s))</h6>
                                 <div class="d-flex flex-wrap gap-3 mb-4">
                                     @for (int i = 0; i < sheet.ImageUrls.Count; i++)
                                     {
@@ -297,7 +462,7 @@
                                                 <img src="@Model.BackendBaseUrl@imgUrl"
                                                      alt="Answer Sheet Page @(i + 1)"
                                                      class="rounded border shadow-sm"
-                                                     style="max-height: 300px; max-width: 220px; object-fit: contain; cursor: zoom-in; transition: transform 0.2s;"
+                                                     style="max-height: 280px; max-width: 200px; object-fit: contain; cursor: zoom-in; transition: transform 0.2s;"
                                                      onmouseover="this.style.transform='scale(1.03)'"
                                                      onmouseout="this.style.transform='scale(1)'"
                                                      onerror="this.closest('.text-center').innerHTML='<span class=\'text-muted small\'><i class=\'bi bi-image-slash me-1\'></i>Page @(i+1) unavailable</span>'" />
@@ -309,11 +474,11 @@
                             }
 
                             <!-- Raw OCR Output -->
-                            <h6 class="fw-bold mb-2"><i class="bi bi-code-square text-secondary me-2"></i>Raw OCR Extracted Text</h6>
-                            <pre class="bg-dark text-light p-3 rounded-3 mb-0" style="white-space: pre-wrap; font-size: 0.85rem; max-height: 200px; overflow-y: auto;">@sheet.RawOcrText</pre>
+                            <h6 class="fw-bold mb-2" style="color: #1e293b;"><i class="bi bi-code-square text-secondary me-2"></i>Raw OCR Extracted Text</h6>
+                            <pre class="bg-dark text-light p-3 rounded-3 mb-0" style="white-space: pre-wrap; font-size: 0.82rem; max-height: 180px; overflow-y: auto;">@sheet.RawOcrText</pre>
                         </div>
-                        <div class="modal-footer border-0">
-                            <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Close</button>
+                        <div class="modal-footer border-0 bg-light py-2 px-4">
+                            <button type="button" class="btn btn-secondary px-4 btn-sm" data-bs-dismiss="modal">Close</button>
                         </div>
                     </div>
                 </div>
@@ -324,26 +489,94 @@
 
 @section Scripts {
     <script>
-        function filterTable() {
-            var input = document.getElementById("searchInput");
-            var filter = input.value.toLowerCase();
-            var table = document.getElementById("gradedTable");
-            if (!table) return;
-            var tr = table.getElementsByTagName("tr");
+        function applyFilters() {
+            var searchInput = document.getElementById("searchInput");
+            var searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : "";
+            
+            var batchSelect = document.getElementById("batchSelectFilter");
+            var selectedBatch = batchSelect ? batchSelect.value.toLowerCase().trim() : "";
 
-            for (var i = 1; i < tr.length; i++) {
-                var tdStudent = tr[i].getElementsByTagName("td")[1];
-                var tdDoc = tr[i].getElementsByTagName("td")[2];
-                if (tdStudent || tdDoc) {
-                    var studentText = tdStudent ? (tdStudent.textContent || tdStudent.innerText) : "";
-                    var docText = tdDoc ? (tdDoc.textContent || tdDoc.innerText) : "";
-                    if (studentText.toLowerCase().indexOf(filter) > -1 || docText.toLowerCase().indexOf(filter) > -1) {
-                        tr[i].style.display = "";
-                    } else {
-                        tr[i].style.display = "none";
-                    }
+            var batchCards = document.querySelectorAll(".batch-card");
+            var visibleBatchesCount = 0;
+
+            batchCards.forEach(function (card) {
+                var cardBatchTitle = (card.getAttribute("data-batch-title") || "").toLowerCase();
+                
+                // If a specific batch is chosen and doesn't match this card, hide it completely
+                if (selectedBatch && cardBatchTitle !== selectedBatch) {
+                    card.style.display = "none";
+                    return;
                 }
+
+                // If searching, check both batch title and inner submission rows
+                var rows = card.querySelectorAll(".submission-row");
+                var batchMatchesSearch = searchTerm === "" || cardBatchTitle.indexOf(searchTerm) > -1;
+                var visibleRowsInBatch = 0;
+
+                rows.forEach(function (row) {
+                    var studentCell = row.querySelector(".student-name-cell");
+                    var docCell = row.querySelector(".document-name-cell");
+
+                    var studentText = studentCell ? studentCell.textContent.toLowerCase() : "";
+                    var docText = docCell ? docCell.textContent.toLowerCase() : "";
+
+                    if (searchTerm === "" || batchMatchesSearch || studentText.indexOf(searchTerm) > -1 || docText.indexOf(searchTerm) > -1) {
+                        row.style.display = "";
+                        visibleRowsInBatch++;
+                    } else {
+                        row.style.display = "none";
+                    }
+                });
+
+                if (visibleRowsInBatch > 0 || (searchTerm === "" && !selectedBatch)) {
+                    card.style.display = "";
+                    visibleBatchesCount++;
+
+                    // If user is searching and matched items, ensure the accordion is expanded
+                    if (searchTerm !== "") {
+                        var collapseEl = card.querySelector(".batch-collapse");
+                        if (collapseEl && !collapseEl.classList.contains("show")) {
+                            var bsCollapse = bootstrap.Collapse.getOrCreateInstance(collapseEl, { toggle: false });
+                            bsCollapse.show();
+                        }
+                    }
+                } else {
+                    card.style.display = "none";
+                }
+            });
+
+            // Toggle No Results Message
+            var noResultsMsg = document.getElementById("noResultsMsg");
+            if (noResultsMsg) {
+                noResultsMsg.classList.toggle("d-none", visibleBatchesCount > 0);
             }
+
+            var badge = document.getElementById("batchCountBadge");
+            if (badge) {
+                badge.textContent = "Showing " + visibleBatchesCount + (visibleBatchesCount === 1 ? " batch" : " batches");
+            }
+        }
+
+        function toggleAllBatches(expand) {
+            var collapsibles = document.querySelectorAll(".batch-collapse");
+            collapsibles.forEach(function (el) {
+                var bsCollapse = bootstrap.Collapse.getOrCreateInstance(el, { toggle: false });
+                if (expand) {
+                    bsCollapse.show();
+                } else {
+                    bsCollapse.hide();
+                }
+            });
+        }
+
+        function resetFilters() {
+            var searchInput = document.getElementById("searchInput");
+            if (searchInput) searchInput.value = "";
+
+            var batchSelect = document.getElementById("batchSelectFilter");
+            if (batchSelect) batchSelect.value = "";
+
+            applyFilters();
         }
     </script>
 }

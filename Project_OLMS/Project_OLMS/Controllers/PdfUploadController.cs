@@ -223,7 +223,113 @@ namespace Project_OLMS.Controllers
             return Ok(new { message = $"Document '{fileName}' was deleted successfully." });
         }
 
+        // ── Update Batch Title (Admin Only) ──────────────────────────────────
+
+        /// <summary>
+        /// PUT api/pdfupload/batch-title
+        /// Renames all documents sharing a batch title (or fallback file name).
+        /// Restricted strictly to the Administrator role; teachers / standard users receive 403 Forbidden.
+        /// </summary>
+        [HttpPut("batch-title")]
+        public async Task<IActionResult> UpdateBatchTitle([FromBody] UpdateBatchTitleRequest request)
+        {
+            if (!IsCurrentUserAdmin())
+                return StatusCode(403, new { message = "Access Denied: Only administrators are authorized to edit batch titles." });
+
+            if (string.IsNullOrWhiteSpace(request?.NewTitle))
+                return BadRequest(new { message = "NewTitle is required." });
+
+            string oldTitle = request.OldTitle?.Trim() ?? string.Empty;
+            string newTitle = request.NewTitle.Trim();
+
+            var matchingDocs = await context.Documents
+                .Where(d => (d.BatchTitle != null && d.BatchTitle == oldTitle)
+                         || (d.BatchTitle == null && d.FileName == oldTitle))
+                .ToListAsync();
+
+            if (matchingDocs.Count == 0)
+                return NotFound(new { message = $"No documents found matching batch title '{oldTitle}'." });
+
+            foreach (var doc in matchingDocs)
+            {
+                doc.BatchTitle = newTitle;
+            }
+
+            await context.SaveChangesAsync();
+
+            await auditLogService.LogDocumentExamAsync(
+                action: "Batch Title Updated",
+                details: $"Admin updated batch title from '{oldTitle}' to '{newTitle}' across {matchingDocs.Count} document(s).",
+                userId: GetCurrentUserId(),
+                username: GetCurrentUsername(),
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+            );
+
+            return Ok(new
+            {
+                message = $"Successfully updated batch title to '{newTitle}'.",
+                updatedCount = matchingDocs.Count
+            });
+        }
+
+        /// <summary>
+        /// PUT api/pdfupload/{id:int}/batch-title
+        /// Updates the batch title for a single document.
+        /// Restricted strictly to the Administrator role.
+        /// </summary>
+        [HttpPut("{id:int}/batch-title")]
+        public async Task<IActionResult> UpdateDocumentBatchTitle(int id, [FromBody] UpdateDocumentBatchTitleRequest request)
+        {
+            if (!IsCurrentUserAdmin())
+                return StatusCode(403, new { message = "Access Denied: Only administrators are authorized to edit batch titles." });
+
+            var doc = await context.Documents.FindAsync(id);
+            if (doc == null)
+                return NotFound(new { message = $"Document with Id {id} was not found." });
+
+            string oldTitle = doc.BatchTitle ?? "(None)";
+            string? newTitle = string.IsNullOrWhiteSpace(request?.BatchTitle) ? null : request.BatchTitle.Trim();
+
+            doc.BatchTitle = newTitle;
+            await context.SaveChangesAsync();
+
+            await auditLogService.LogDocumentExamAsync(
+                action: "Document Batch Title Updated",
+                details: $"Admin updated document '{doc.FileName}' (ID: {id}) batch title from '{oldTitle}' to '{newTitle ?? "(None)"}'.",
+                userId: GetCurrentUserId(),
+                username: GetCurrentUsername(),
+                ipAddress: HttpContext.Connection.RemoteIpAddress?.ToString()
+            );
+
+            return Ok(new
+            {
+                message = $"Document batch title updated to '{newTitle ?? "(None)"}'.",
+                document = MapToResponse(doc)
+            });
+        }
+
         // ── Private Helpers ───────────────────────────────────────────────────
+
+        private bool IsCurrentUserAdmin()
+        {
+            var roleClaim = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value
+                         ?? User.FindFirst("role")?.Value;
+
+            if (string.Equals(roleClaim, "Admin", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            var userId = GetCurrentUserId();
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var user = context.Users.AsNoTracking().FirstOrDefault(u => u.Id == userId);
+                if (user != null && string.Equals(user.Role, "Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         private string? GetCurrentUserId() =>
             User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value

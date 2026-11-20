@@ -190,6 +190,7 @@ namespace Project_OLMS.Models.DTO
     {
         public int Id { get; set; }
         public int ExamId { get; set; }
+        public string? BatchTitle { get; set; }
         public string DocumentFileName { get; set; } = string.Empty;
         public string StudentName { get; set; } = string.Empty;
         public DateTime GradedAt { get; set; }
@@ -199,5 +200,16 @@ namespace Project_OLMS.Models.DTO
         public string RawOcrText { get; set; } = string.Empty;
         public List<CheckedAnswerItem> Results { get; set; } = new();
         public List<string> ImageUrls { get; set; } = new();
+    }
+
+    public class UpdateBatchTitleRequest
+    {
+        public string OldTitle { get; set; } = string.Empty;
+        public string NewTitle { get; set; } = string.Empty;
+    }
+
+    public class UpdateDocumentBatchTitleRequest
+    {
+        public string BatchTitle { get; set; } = string.Empty;
     }
 }

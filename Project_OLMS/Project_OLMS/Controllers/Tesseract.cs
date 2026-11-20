@@ -251,6 +251,7 @@ namespace Project_OLMS.Controllers
             {
                 Id              = g.Id,
                 ExamId          = g.ExamId,
+                BatchTitle      = g.Exam?.Document?.BatchTitle,
                 DocumentFileName = g.Exam?.Document?.FileName ?? $"Exam #{g.ExamId}",
                 StudentName     = g.StudentName,
                 GradedAt        = g.GradedAt,
@@ -292,6 +293,7 @@ namespace Project_OLMS.Controllers
             {
                 Id              = g.Id,
                 ExamId          = g.ExamId,
+                BatchTitle      = exam.Document?.BatchTitle,
                 DocumentFileName = exam.Document?.FileName ?? $"Exam #{examId}",
                 StudentName     = g.StudentName,
                 GradedAt        = g.GradedAt,
