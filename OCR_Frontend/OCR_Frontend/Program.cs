@@ -22,7 +22,7 @@ builder.Services.AddHttpClient("BackendClient", client =>
     {
         client.BaseAddress = new Uri(baseUrl);
     }
-    client.Timeout = TimeSpan.FromMinutes(5); // 5 minutes to accommodate large multi-PDF AI analysis
+    client.Timeout = TimeSpan.FromMinutes(10); // Allow large multi-PDF analysis to complete without an avoidable frontend timeout
 });
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddRazorPages();

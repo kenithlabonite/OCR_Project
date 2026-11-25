@@ -114,7 +114,7 @@ namespace OCR_Frontend.Pages
             }
             catch (TaskCanceledException)
             {
-                ErrorMessage = "The exam generation request took longer than expected and timed out. Multi-PDF batch analysis can take several minutes. Please check the Questionnaires page to see if it finished, or try generating with fewer documents.";
+                ErrorMessage = "The exam generation request exceeded the 10-minute limit. Please try a smaller batch or fewer PDF lessons.";
                 return Page();
             }
             catch (Exception ex)

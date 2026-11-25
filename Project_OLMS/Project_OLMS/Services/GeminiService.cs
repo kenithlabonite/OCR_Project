@@ -53,7 +53,7 @@ namespace Project_OLMS.Services
         // in this refactor to avoid changing DI registration right now.
         private static readonly HttpClient _httpClient = new HttpClient
         {
-            Timeout = TimeSpan.FromMinutes(5) // 300 seconds per attempt to accommodate longer Gemini processing
+            Timeout = TimeSpan.FromMinutes(10)
         };
 
         // Case-insensitive deserialization to tolerate slight field-name variations from the AI
@@ -68,7 +68,7 @@ namespace Project_OLMS.Services
             _apiKey = configuration["Gemini:ApiKey"]
                       ?? throw new InvalidOperationException("Gemini API key is not configured.");
             _primaryModelId = string.IsNullOrWhiteSpace(configuration["Gemini:Model"]) 
-                       ? "gemini-3.8-flash" 
+                       ? "gemini-2.5-flash"
                        : configuration["Gemini:Model"]!;
         }
 
@@ -81,9 +81,9 @@ namespace Project_OLMS.Services
 
         private async Task<string?> CallGeminiApiForMultipleImagesAsync(string prompt, List<(byte[] Bytes, string MimeType)> files)
         {
-            // Build fallback model chain: primary model -> gemini-3.5-flash -> gemini-2.5-flash
+            // Keep the model chain short so a bad or unavailable model does not add
+            // multiple minutes of empty retries before generation starts.
             var candidateModels = new List<string> { _primaryModelId };
-            if (!candidateModels.Contains("gemini-3.5-flash")) candidateModels.Add("gemini-3.5-flash");
             if (!candidateModels.Contains("gemini-2.5-flash")) candidateModels.Add("gemini-2.5-flash");
 
             var partsList = new List<object>
@@ -111,6 +111,12 @@ namespace Project_OLMS.Services
                     {
                         parts = partsList.ToArray()
                     }
+                },
+                generationConfig = new
+                {
+                    temperature = 0.2,
+                    maxOutputTokens = 4000,
+                    responseMimeType = "application/json"
                 }
             };
 
@@ -120,7 +126,7 @@ namespace Project_OLMS.Services
             foreach (var modelId in candidateModels)
             {
                 var url = $"https://generativelanguage.googleapis.com/v1beta/models/{modelId}:generateContent?key={_apiKey}";
-                const int maxAttemptsPerModel = 2;
+                const int maxAttemptsPerModel = 1;
 
                 for (int attempt = 1; attempt <= maxAttemptsPerModel; attempt++)
                 {
@@ -354,6 +360,7 @@ namespace Project_OLMS.Services
                     "Read all of them carefully and create exactly 10 multiple-choice questions that comprehensively test " +
                     "understanding across ALL the provided documents in this batch. " +
                     "Cover a range of topics from the different documents — do not focus on just one file. " +
+                    "Keep questions, options, and explanations concise to reduce processing and response size. " +
                     "Do not include phrases like 'According to the document', 'Based on the text', 'According to the PDF', or similar in the question text. Ask the questions directly. " +
                     "Your response must be ONLY a raw JSON array — no markdown, " +
                     "no code fences, no explanatory text before or after. " +
@@ -486,7 +493,9 @@ namespace Project_OLMS.Services
                     "Carefully scan the ENTIRE image from top to bottom including page edges, margins, and near page numbers. " +
                     "Find the student's answer letter (A, B, C, or D) for EVERY question item (1, 2, 3, 4, 5, 6, 7, 8, 9, 10...).\n" +
                     "CRITICAL RULES FOR FINDING ANSWERS:\n" +
-                    "- Answers are ALWAYS written on the blank line BEFORE the item number (e.g. '_B_ 6.' means question 6 answer is B).\n" +
+                    "- Answers are marked by a circle or other clear enclosure around the option letter A, B, C, or D next to the option text.\n" +
+                    "- Do not use an answer letter simply because it appears in the printed question or as an ordinary, unmarked option.\n" +
+                    "- If only one option letter is visibly encircled for an item, report that letter.\n" +
                     "- Look at the very bottom and very top of the page — answers near page footers (e.g. 'Page 1 of 2') are still valid.\n" +
                     "- A question whose text is cut off at the bottom of the page still has its answer written before its number on that same page.\n" +
                     "- Do NOT skip any question number. If you see a number 1-10, you MUST report its answer (or empty string if truly unreadable).\n" +
@@ -583,7 +592,9 @@ namespace Project_OLMS.Services
                     "Carefully scan ALL pages from top to bottom including page edges, margins, and near page numbers. " +
                     "Find the student's answer letter (A, B, C, or D) for EVERY question item (1, 2, 3, 4, 5, 6, 7, 8, 9, 10...) across all pages.\n" +
                     "CRITICAL RULES FOR FINDING ANSWERS:\n" +
-                    "- Answers are ALWAYS written on the blank line BEFORE the item number (e.g. '_B_ 6.' means question 6 answer is B).\n" +
+                    "- Answers are marked by a circle or other clear enclosure around the option letter A, B, C, or D next to the option text.\n" +
+                    "- Do not use an answer letter simply because it appears in the printed question or as an ordinary, unmarked option.\n" +
+                    "- If only one option letter is visibly encircled for an item, report that letter.\n" +
                     "- Look at the very bottom and very top of EACH page — answers near page footers (e.g. 'Page 1 of 2') are still valid.\n" +
                     "- A question whose text is cut off at the bottom of one page and continues at the top of the next page still has its answer written before its number on the FIRST page.\n" +
                     "- Do NOT skip any question number. If you see numbers 1-10, report ALL their answers (or empty string if truly unreadable).\n" +

@@ -3,6 +3,9 @@
     var userRole = Context.Request.Cookies["UserRole"] ?? "User";
     var displayName = Context.Request.Cookies["DisplayName"] ?? "User";
     var displayEmail = Context.Request.Cookies["DisplayEmail"] ?? "";
+    var isAdmin = string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase);
+    var workspaceTitle = isAdmin ? "Admin Workspace" : "Teacher Workspace";
+    var workspaceIcon = isAdmin ? "bi-shield-lock-fill" : "bi-mortarboard-fill";
     var currentPath = Context.Request.Path.Value ?? "";
     var isAuthPage = currentPath.Equals("/Login", StringComparison.OrdinalIgnoreCase)
                   || currentPath.Equals("/Register", StringComparison.OrdinalIgnoreCase)
@@ -100,7 +103,7 @@
                                     <div style="font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8;">Signed in as</div>
                                     <div class="text-truncate fw-semibold" style="font-size: 0.85rem; color: #0f172a;">@(!string.IsNullOrEmpty(displayEmail) ? displayEmail : displayName)</div>
                                     <div class="mt-1">
-                                        @if (userRole == "Admin")
+                                        @if (isAdmin)
                                         {
                                             <span class="badge" style="background-color: #fff1f2; color: #e11d48; border: 1px solid #fda4af; font-size: 0.68rem; border-radius: 20px; padding: 2px 8px;">
                                                 <i class="bi bi-shield-check me-1"></i>ADMINISTRATOR
@@ -121,7 +124,7 @@
                                     <i class="bi bi-person-gear"></i> Account Profile
                                 </a>
                             </li>
-                            @if (userRole == "Admin")
+                            @if (isAdmin)
                             {
                                 <li>
                                     <a href="/Admin" class="dropdown-item d-inline-flex align-items-center gap-2 px-3 py-2" style="font-size: 0.82rem; color: #e11d48;">
@@ -151,14 +154,14 @@
                     <!-- Workspace Header Card -->
                     <div class="d-flex align-items-center gap-2.5 mb-3 p-1">
                         <div class="d-flex align-items-center justify-content-center rounded flex-shrink-0" style="width: 38px; height: 38px; background-color: #eff6ff; color: #2563eb;">
-                            <i class="bi bi-mortarboard-fill fs-5"></i>
+                            <i class="bi @workspaceIcon fs-5"></i>
                         </div>
                         <div class="overflow-hidden sidebar-hide-on-collapse">
-                            <div class="fw-bold text-truncate" style="font-size: 0.86rem; color: #0f172a;" title="Teacher Workspace">
-                                Teacher Workspace
+                            <div class="fw-bold text-truncate" style="font-size: 0.86rem; color: #0f172a;" title="@workspaceTitle">
+                                @workspaceTitle
                             </div>
                             <span style="font-size: 0.78rem; color: #2563eb; font-weight: 500;">
-                                Online Learning System
+                                Exam Generator & OCR Grading System
                             </span>
                         </div>
                     </div>
@@ -192,7 +195,7 @@
                         </a>
                     </nav>
 
-                    @if (userRole == "Admin")
+                    @if (isAdmin)
                     {
                         <!-- Navigation Group 2: ADMINISTRATION -->
                         <div class="sidebar-section-title sidebar-hide-on-collapse">ADMINISTRATION</div>
@@ -228,10 +231,10 @@
                     <!-- Workspace Header Card -->
                     <div class="d-flex align-items-center gap-2.5 mb-3 p-1">
                         <div class="d-flex align-items-center justify-content-center rounded flex-shrink-0" style="width: 36px; height: 36px; background-color: #eff6ff; color: #2563eb;">
-                            <i class="bi bi-mortarboard-fill fs-5"></i>
+                            <i class="bi @workspaceIcon fs-5"></i>
                         </div>
                         <div>
-                            <div class="fw-bold" style="font-size: 0.84rem; color: #0f172a;">Teacher Workspace</div>
+                            <div class="fw-bold" style="font-size: 0.84rem; color: #0f172a;">@workspaceTitle</div>
                             <span style="font-size: 0.76rem; color: #2563eb;">Online Learning System</span>
                         </div>
                     </div>
@@ -258,7 +261,7 @@
                         </a>
                     </nav>
 
-                    @if (userRole == "Admin")
+                    @if (isAdmin)
                     {
                         <div class="sidebar-section-title">ADMINISTRATION</div>
                         <nav class="d-flex flex-column">

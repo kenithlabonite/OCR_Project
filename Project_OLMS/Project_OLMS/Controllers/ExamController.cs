@@ -402,7 +402,7 @@ namespace Project_OLMS.Controllers
                             {
                                 instrCol.Spacing(3);
                                 instrCol.Item().Text("INSTRUCTIONS:").Bold().FontSize(11).FontColor(Colors.Red.Darken2);
-                                instrCol.Item().Text("Write your final answer BEFORE the item number for each question (e.g., A 1.). Answers written anywhere else will not be counted.").FontSize(11).Italic();
+                                instrCol.Item().Text("Encircle the letter of the correct answer for each item. Strictly, avoid erasures.").FontSize(11).Italic();
                             });
 
                             foreach (var q in questions)
@@ -410,7 +410,7 @@ namespace Project_OLMS.Controllers
                                 column.Item().Column(questionCol =>
                                 {
                                     questionCol.Spacing(5);
-                                    questionCol.Item().Text($"_______ {q.Number}. {q.QuestionText}").SemiBold().FontSize(12);
+                                    questionCol.Item().Text($"{q.Number}. {q.QuestionText}").SemiBold().FontSize(12);
 
                                     var optionsList = new[]
                                     {
